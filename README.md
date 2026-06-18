@@ -10,6 +10,7 @@
 ├── paperless-forms-plugin/      # کدهای منبع افزونه بومی جیرا (Java 21 + AMPS 9.11.2)
 ├── documents/                   # مستندات نیازمندی‌ها، نقشه راه، الگوها و جداول داده‌ها
 │   ├── database_schema.md       # سند طراحی و ساختار جداول پایگاه‌داده
+│   ├── solution_architecture.md # سند معماری و طراحی راه‌حل (رابط کاربری پویا)
 │   ├── project_roadmap.md       # نقشه راه کلان پروژه
 │   ├── implementation_plan.md   # برنامه پیاده‌سازی گام‌به‌گام
 │   ├── jb stup.pdf              # مستندات نیازمندی‌های سیستم
