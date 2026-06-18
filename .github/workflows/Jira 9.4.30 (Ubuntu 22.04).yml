@@ -3,9 +3,9 @@ name: Jira 9.4.30 CI (Ubuntu 22.04)
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   test:
@@ -22,7 +22,6 @@ jobs:
           - 1433:1433
 
     steps:
-      # کلون کردن ریپازیتوری پرایوت با استفاده از توکن
       - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
         with:
@@ -30,14 +29,12 @@ jobs:
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: '.'
 
-      # Jira 9.x STRICTLY requires Java 11
       - name: Set up JDK 11 (Temurin)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      # مرحله بیلد: تنظیم Maven Compiler برای جاوا ۱۱
       - name: Build Plugin with Maven
         run: |
           chmod +x mvnw
@@ -85,7 +82,6 @@ jobs:
           # تغییر مالکیت پوشه به کاربر فعلی برای اجرای بدون sudo
           sudo chown -R $USER:$USER /opt/atlassian
 
-      # استفاده از درایور SQL Server سازگار با جاوا ۱۱
       - name: Download SQL Server JDBC Driver
         run: |
           wget -q https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.8.1.jre11/mssql-jdbc-12.8.1.jre11.jar
@@ -151,4 +147,17 @@ jobs:
           curl -I http://localhost:8080
 
       - name: Verify Plugin Initialization
-        run
+        run: |
+          echo "Checking logs for plugin initialization..."
+          grep -i "Jira-persian-calender" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
+
+      - name: Stop Jira
+        if: always()
+        run: |
+          /opt/atlassian/jira/bin/stop-jira.sh || true
+
+      - name: Collect logs
+        if: failure()
+        run: |
+          cat /opt/atlassian/jira/logs/catalina.out || true
+          cat /var/atlassian/application-data/jira/log/atlassian-jira.log || true
