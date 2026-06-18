@@ -22,8 +22,13 @@ jobs:
           - 1433:1433
 
     steps:
-      - name: Checkout code
+      # تغییر اعمال شده: کلون کردن ریپازیتوری پرایوت با استفاده از توکن
+      - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
+        with:
+          repository: 'Hossein558/Jira-persian-calender'
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: '.'
 
       # Jira 8.x STRICTLY requires Java 8
       - name: Set up JDK 8 (Temurin)
