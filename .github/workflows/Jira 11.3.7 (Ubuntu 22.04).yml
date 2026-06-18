@@ -3,9 +3,9 @@ name: Jira 11.3.7 CI (Ubuntu 22.04)
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   test:
@@ -22,21 +22,25 @@ jobs:
           - 1433:1433
 
     steps:
-      - name: Checkout code
+      - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
+        with:
+          repository: 'Hossein558/Jira-persian-calender'
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: '.'
 
-      # Jira 11.x STRICTLY requires Java 21
+      # خانواده جیرا 11 به جاوا 21 نیاز دارند
       - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # مرحله جدید: بیلد کردن افزونه با Maven
+      # تنظیم Maven Compiler برای جاوا 21
       - name: Build Plugin with Maven
         run: |
           chmod +x mvnw
-          ./mvnw clean package -DskipTests
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
           echo "Build successful. Artifacts in target/:"
           ls -lh target/*.jar
 
@@ -119,7 +123,6 @@ jobs:
           </jira-database-config>
           EOF
 
-      # مرحله جدید: تزریق افزونه به هسته جیرا قبل از استارت
       - name: Deploy Plugin to Jira
         run: |
           mkdir -p /var/atlassian/application-data/jira/plugins/installed-plugins
@@ -128,6 +131,7 @@ jobs:
 
       - name: Start Jira
         run: |
+          # اجرای جیرا با جاوا 21
           /opt/atlassian/jira/bin/start-jira.sh
           echo "Waiting for Jira to start..."
           for i in {1..60}; do
