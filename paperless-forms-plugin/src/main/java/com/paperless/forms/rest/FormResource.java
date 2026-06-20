@@ -25,7 +25,7 @@ public class FormResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces("application/json; charset=UTF-8")
     public Response getForms() {
         try {
             List<FormDTO> forms = databaseService.getForms();

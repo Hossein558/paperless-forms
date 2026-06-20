@@ -24,18 +24,14 @@ public class DatabaseService {
     private static final Logger log = LoggerFactory.getLogger(DatabaseService.class);
 
     private Connection getConnection() throws Exception {
-        ClassLoader orig = Thread.currentThread().getContextClassLoader();
+        log.debug("Getting database connection from Jira Ofbiz Delegator...");
         try {
-            Thread.currentThread().setContextClassLoader(ComponentAccessor.class.getClassLoader());
-            log.debug("Looking up JiraDS from InitialContext...");
-            InitialContext initialContext = new InitialContext();
-            DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/JiraDS");
-            return dataSource.getConnection();
+            org.ofbiz.core.entity.DelegatorInterface delegator = ComponentAccessor.getComponent(org.ofbiz.core.entity.DelegatorInterface.class);
+            String helperName = delegator.getGroupHelperName("default");
+            return org.ofbiz.core.entity.ConnectionFactory.getConnection(helperName);
         } catch (Exception e) {
-            log.error("Failed to get database connection", e);
+            log.error("Failed to get database connection from Ofbiz", e);
             throw e;
-        } finally {
-            Thread.currentThread().setContextClassLoader(orig);
         }
     }
 

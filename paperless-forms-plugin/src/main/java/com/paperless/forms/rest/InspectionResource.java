@@ -22,7 +22,7 @@ public class InspectionResource {
 
     @GET
     @Path("/parts")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces("application/json; charset=UTF-8")
     public Response getParts() {
         try {
             return Response.ok(databaseService.getParts()).build();
@@ -34,7 +34,7 @@ public class InspectionResource {
 
     @GET
     @Path("/parameters")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces("application/json; charset=UTF-8")
     public Response getParameters(@QueryParam("partCode") String partCode) {
         try {
             if (partCode == null || partCode.isEmpty()) {
@@ -50,7 +50,7 @@ public class InspectionResource {
     @POST
     @Path("/sessions")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces("application/json; charset=UTF-8")
     public Response saveSession(InspectionSubmissionDTO submission) {
         try {
             ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
