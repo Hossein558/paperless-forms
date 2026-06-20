@@ -152,6 +152,17 @@ jobs:
           echo "Checking logs for plugin initialization..."
           grep -i "Jira-persian-calender" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
 
+      - name: Deploy Plugin JAR via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "target/*.jar"
+          target: "/home/github/paperless-forms/paperless-forms-plugin/"
+          strip_components: 0
+
       - name: Stop Jira
         if: always()
         run: |
