@@ -12,7 +12,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.inject.Named;
+import javax.inject.Named;
 
 @Named
 public class DatabaseService {
