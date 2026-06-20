@@ -39,8 +39,16 @@ export interface Form {
   active: boolean;
 }
 
-// Ensure AJS is available or fallback to empty string for local dev
+// Ensure we use the Jira 11 compatible way to get the context path or fallback to empty string for local dev
 const getBaseUrl = () => {
+  // In Jira 11, we should read from the meta tag instead of legacy AJS global
+  const contextPathMeta = document.querySelector('meta[name="ajs-context-path"]');
+  if (contextPathMeta) {
+    const contextPath = contextPathMeta.getAttribute('content') || '';
+    return contextPath + '/rest/paperless/1.0';
+  }
+
+  // Fallback for older Jira versions just in case, though meta tag is standard
   // @ts-ignore
   if (typeof AJS !== 'undefined' && AJS.contextPath) {
     // @ts-ignore
