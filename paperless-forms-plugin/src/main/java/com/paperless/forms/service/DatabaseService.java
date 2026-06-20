@@ -14,16 +14,33 @@ import java.util.List;
 
 import javax.inject.Named;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.atlassian.jira.component.ComponentAccessor;
+
 @Named
 public class DatabaseService {
 
+    private static final Logger log = LoggerFactory.getLogger(DatabaseService.class);
+
     private Connection getConnection() throws Exception {
-        InitialContext initialContext = new InitialContext();
-        DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/JiraDS");
-        return dataSource.getConnection();
+        ClassLoader orig = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(ComponentAccessor.class.getClassLoader());
+            log.debug("Looking up JiraDS from InitialContext...");
+            InitialContext initialContext = new InitialContext();
+            DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/JiraDS");
+            return dataSource.getConnection();
+        } catch (Exception e) {
+            log.error("Failed to get database connection", e);
+            throw e;
+        } finally {
+            Thread.currentThread().setContextClassLoader(orig);
+        }
     }
 
     public List<FormDTO> getForms() throws Exception {
+        log.debug("Fetching forms from PM_Forms...");
         List<FormDTO> forms = new ArrayList<>();
         String sql = "SELECT FormCode, FormName, Description, IsActive FROM PM_Forms WHERE IsActive = 1";
         try (Connection conn = getConnection();
@@ -37,6 +54,10 @@ public class DatabaseService {
                 form.setActive(rs.getBoolean("IsActive"));
                 forms.add(form);
             }
+            log.info("Successfully fetched {} active forms", forms.size());
+        } catch (Exception e) {
+            log.error("Error executing getForms query: {}", e.getMessage(), e);
+            throw e;
         }
         return forms;
     }
