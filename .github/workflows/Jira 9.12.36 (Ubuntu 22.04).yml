@@ -31,15 +31,15 @@ jobs:
 
       # Jira 9.x STRICTLY requires Java 11
       - name: Set up JDK 11 (Temurin)
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Build Plugin with Maven
         run: |
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=11 -Dmaven.compiler.target=11
+          cd paperless-forms-plugin
+          mvn clean package -DskipTests -Dmaven.compiler.source=11 -Dmaven.compiler.target=11
           echo "Build successful. Artifacts in target/:"
           ls -lh target/*.jar
 
@@ -125,7 +125,7 @@ jobs:
       - name: Deploy Plugin to Jira
         run: |
           mkdir -p /var/atlassian/application-data/jira/plugins/installed-plugins
-          cp target/*.jar /var/atlassian/application-data/jira/plugins/installed-plugins/
+          cp paperless-forms-plugin/target/*.jar /var/atlassian/application-data/jira/plugins/installed-plugins/
           echo "Plugin successfully injected into Jira Home!"
 
       - name: Start Jira

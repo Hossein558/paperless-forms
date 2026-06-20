@@ -13,7 +13,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build Plugin with Maven
+        run: |
+          cd paperless-forms-plugin
+          mvn clean package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
+          echo "Build successful. Artifacts in target/:"
+          ls -lh target/*.jar
+
       - name: System info
         run: |
           echo "Ubuntu: $(lsb_release -rs)"
@@ -35,12 +48,13 @@ jobs:
           ls -la /opt/atlassian/ || true
 
       - name: Deploy Plugin JAR via SCP
+        if: ${{ secrets.SERVER_IP != '' }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: "target/*.jar"
+          source: "paperless-forms-plugin/target/*.jar"
           target: "/home/github/paperless-forms/paperless-forms-plugin/"
-          strip_components: 0
+          strip_components: 2
