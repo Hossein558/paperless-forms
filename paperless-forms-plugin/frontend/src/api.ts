@@ -51,7 +51,10 @@ const getBaseUrl = () => {
 
 export const fetchForms = async (): Promise<Form[]> => {
   const response = await fetch(`${getBaseUrl()}/forms`);
-  if (!response.ok) throw new Error('Failed to fetch forms');
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to fetch forms: ${text}`);
+  }
   return response.json();
 };
 

@@ -17,7 +17,7 @@ const Portal = ({ onSelectForm }: PortalProps) => {
       .then(setForms)
       .catch(err => {
         console.error(err);
-        setError('Failed to load forms.');
+        setError(err instanceof Error ? err.message : 'Failed to load forms.');
       })
       .finally(() => setLoading(false));
   }, []);

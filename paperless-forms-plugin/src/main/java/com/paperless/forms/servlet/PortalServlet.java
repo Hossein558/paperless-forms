@@ -28,6 +28,7 @@ public class PortalServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("PortalServlet triggered for URI: " + req.getRequestURI());
         pageBuilderService.assembler().resources().requireWebResource("com.paperless.forms.paperless-forms-plugin:paperless-forms-plugin-resources");
         resp.setContentType("text/html;charset=utf-8");
         templateRenderer.render("templates/portal.vm", new HashMap<>(), resp.getWriter());

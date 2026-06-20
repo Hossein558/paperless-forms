@@ -27,6 +27,7 @@
     
     <servlet key="paperless-forms-servlet" class="com.paperless.forms.servlet.PortalServlet">
         <url-pattern>/paperless-forms/portal</url-pattern>
+        <url-pattern>/paperless-forms/inspection</url-pattern>
     </servlet>
 
     <web-item key="paperless-forms-menu-item" name="Paperless Forms" section="system.top.navigation.bar" weight="100">

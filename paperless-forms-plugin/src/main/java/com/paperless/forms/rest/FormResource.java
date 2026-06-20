@@ -32,7 +32,7 @@ public class FormResource {
             return Response.ok(forms).build();
         } catch (Exception e) {
             e.printStackTrace();
-            return Response.serverError().entity(e.getMessage()).build();
+            return Response.serverError().entity("{\"error\": \"" + e.getMessage() + "\"}").build();
         }
     }
 }
