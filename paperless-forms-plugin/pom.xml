@@ -7,11 +7,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.paperless.forms</groupId>
     <artifactId>paperless-forms-plugin</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <organization>
-        <name>Example Company</name>
-        <url>http://www.example.com/</url>
+        <name>Crouse.ir</name>
+        <url>https://atlassian.crouseco.com</url>
     </organization>
 
     <name>paperless-forms-plugin</name>
@@ -66,6 +66,18 @@
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
             <version>3.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.templaterenderer</groupId>
+            <artifactId>atlassian-template-renderer-api</artifactId>
+            <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
 

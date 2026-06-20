@@ -13,9 +13,17 @@
 
 ## ساختار پیشنهادی جداول (Schema)
 
-### ۱. جدول `PM_Parts` (اطلاعات پایه قطعات)
+### ۱. جدول `PM_Forms` (لیست فرم‌های پورتال)
+این جدول لیست تمامی فرم‌های موجود در پورتال را نگه می‌دارد.
+- `FormCode` (NVARCHAR(50), Primary Key): کد فرم (مثلاً IPI)
+- `FormName` (NVARCHAR(255)): نام نمایشی فرم (مثلاً In-Process Inspection)
+- `Description` (NVARCHAR(MAX)): توضیحات فرم
+- `IsActive` (BIT): فعال بودن یا نبودن فرم
+
+### ۲. جدول `PM_Parts` (اطلاعات پایه قطعات)
 این جدول معادل همان دیتابیس مرجعی است که فرمودید. تمام اطلاعات ثابت هر کد قطعه در اینجا قرار می‌گیرد.
 - `PartCode` (NVARCHAR(50), Primary Key): کد قطعه / محصول (کلید اصلی)
+- `FormCode` (NVARCHAR(50), Foreign Key): لینک به کد فرم (ارتباط قطعه با فرم مربوطه)
 - `PartName` (NVARCHAR(255)): نام قطعه
 - `StationCode` (NVARCHAR(100)): نام / کد ایستگاه بازرسی
 - `MachineCode` (NVARCHAR(100)): کد ماشین
@@ -57,14 +65,23 @@
 
 ```mermaid
 erDiagram
+    PM_Forms ||--o{ PM_Parts : "شامل"
     PM_Parts ||--o{ PM_Parameters : "دارای"
     PM_Parts ||--o{ PM_InspectionSessions : "مورد بازرسی قرار میگیرد در"
     
     PM_InspectionSessions ||--o{ PM_InspectionAnswers : "شامل"
     PM_Parameters ||--o{ PM_InspectionAnswers : "پاسخ داده میشود در"
 
+    PM_Forms {
+        string FormCode PK
+        string FormName
+        string Description
+        boolean IsActive
+    }
+
     PM_Parts {
         string PartCode PK
+        string FormCode FK
         string PartName
         string StationCode
         string MachineCode
