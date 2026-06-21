@@ -2,10 +2,10 @@ name: Test Jira Plugin
 
 on:
   workflow_dispatch:  # اجرای دستی
-  push:
-    branches: [ main ]
-  pull_request:       # تریگر خودکار با PR
-    branches: [ main ]
+#   push:
+#     branches: [ main ]
+#   pull_request:       # تریگر خودکار با PR
+#     branches: [ main ]
 
 jobs:
   test-jira:

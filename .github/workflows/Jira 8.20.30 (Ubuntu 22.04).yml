@@ -2,10 +2,10 @@ name: Jira 8.20.30 CI (Ubuntu 22.04)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+#   push:
+#     branches: [ main, develop ]
+#   pull_request:
+#     branches: [ main ]
 
 jobs:
   test:

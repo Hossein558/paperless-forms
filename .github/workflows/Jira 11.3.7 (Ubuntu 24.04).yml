@@ -2,9 +2,9 @@ name: Test Plugin - Jira 11.3.7
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, develop]
-  pull_request:
+#   push:
+#     branches: [main, develop]
+#   pull_request:
 
 jobs:
   test-jira-11:

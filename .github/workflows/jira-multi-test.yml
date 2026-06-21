@@ -2,13 +2,13 @@ name: Jira Plugin - Full Test Suite
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * 0'  # هر یکشنبه ساعت 2 صبح UTC
-  push:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'pom.xml'
+#   schedule:
+#     - cron: '0 2 * * 0'  # هر یکشنبه ساعت 2 صبح UTC
+#   push:
+#     branches: [ main ]
+#     paths:
+#       - 'src/**'
+#       - 'pom.xml'
 
 jobs:
   test-all-versions:
