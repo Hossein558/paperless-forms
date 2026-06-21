@@ -58,3 +58,27 @@
 atlas-package
 ```
 فایل خروجی `.jar` در مسیر `paperless-forms-plugin/target/` تولید شده و قابل آپلود در بخش مدیریت افزونه‌های جیرا است.
+
+---
+
+## راهنمای رفع اشکال (Troubleshooting)
+
+### خطای پیدا نشدن پکیج `commons-httpclient:3.1-jenkins-3` در GitHub Actions
+هنگام بیلد افزونه روی سرورهای ابری (مثل GitHub Actions) با استفاده از `maven` خالص، ممکن است با خطای زیر مواجه شوید:
+```text
+Could not find artifact commons-httpclient:commons-httpclient:jar:3.1-jenkins-3
+```
+**دلیل:** حذف شدنِ نسخه غیررسمی `jenkins-3` از مخازن پابلیک و اطلسین است. در محیط لوکال ابزار `atlas-package` این مورد را مخفیانه مدیریت می‌کند، اما در سرور CI/CD که از Maven خام استفاده می‌کند بیلد متوقف می‌شود.
+
+**راهکار:** 
+۱. ابتدا مطمئن شوید که مخازن اطلسین (تگ‌های `<repositories>` و `<pluginRepositories>` حاوی آدرس `packages.atlassian.com`) در `pom.xml` اضافه شده باشند.
+۲. قطعه کد زیر را به صورت دستی درون بلاک `<dependencies>` در فایل `pom.xml` قرار دهید تا نسخه استانداردِ `3.1` جایگزین نسخه مفقود شده گردد:
+
+```xml
+<dependency>
+    <groupId>commons-httpclient</groupId>
+    <artifactId>commons-httpclient</artifactId>
+    <version>3.1</version>
+    <scope>provided</scope>
+</dependency>
+```
