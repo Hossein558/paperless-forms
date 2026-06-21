@@ -30,11 +30,16 @@ jobs:
           path: '.'
 
       # خانواده جیرا 11 به جاوا 21 نیاز دارند
-      - name: Set up JDK 21 (Temurin)
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+      - name: Download and Install Oracle JDK 21
+        run: |
+          echo "Downloading Oracle JDK 21..."
+          wget -q https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+          echo "Installing Oracle JDK 21..."
+          sudo dpkg -i jdk-21_linux-x64_bin.deb
+          # Setting up paths
+          JAVA_DIR=$(ls -d /usr/lib/jvm/jdk-21* | head -n 1)
+          echo "JAVA_HOME=$JAVA_DIR" >> $GITHUB_ENV
+          echo "$JAVA_DIR/bin" >> $GITHUB_PATH
 
       # تنظیم Maven Compiler برای جاوا 21
       - name: Build Plugin with Maven
