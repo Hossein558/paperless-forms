@@ -1,4 +1,4 @@
-﻿name: Test Plugin - Jira 10.3.22
+﻿name: Ubuntu24.04-Jira10.3.22-NoDB-JirapersianCalender
 
 on:
   workflow_dispatch:
@@ -33,5 +33,6 @@ jobs:
         run: |
           sudo systemctl status jira || true
           ls -la /opt/atlassian/ || true
+
 
 

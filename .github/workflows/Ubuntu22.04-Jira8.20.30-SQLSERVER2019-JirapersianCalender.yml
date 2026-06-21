@@ -1,4 +1,4 @@
-﻿name: Jira 8.20.30 CI (Ubuntu 22.04)
+﻿name: Ubuntu22.04-Jira8.20.30-SQLSERVER2019-JirapersianCalender
 
 on:
   workflow_dispatch:
@@ -165,4 +165,5 @@ jobs:
         run: |
           cat /opt/atlassian/jira/logs/catalina.out || true
           cat /var/atlassian/application-data/jira/log/atlassian-jira.log || true
+
 
