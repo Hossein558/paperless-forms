@@ -1,4 +1,4 @@
-﻿name: Ubuntu22.04-Jira11.3.7-SQLSERVER2022-PaperlessForms
+name: Ubuntu22.04-Jira11.3.7-SQLSERVER2022-PaperlessForms
 
 on:
   workflow_dispatch:
@@ -29,18 +29,18 @@ jobs:
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: '.'
 
-      # ط®ط§ظ†ظˆط§ط¯ظ‡ ط¬غŒط±ط§ 11 ط¨ظ‡ ط¬ط§ظˆط§ 21 ظ†غŒط§ط² ط¯ط§ط±ظ†ط¯
+      # خانواده جیرا 11 به جاوا 21 نیاز دارند
       - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # طھظ†ط¸غŒظ… Maven Compiler ط¨ط±ط§غŒ ط¬ط§ظˆط§ 21
+      # تنظیم Maven Compiler برای جاوا 21
       - name: Build Plugin with Maven
+        working-directory: ./paperless-forms-plugin
         run: |
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
+          mvn clean package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
           echo "Build successful. Artifacts in target/:"
           ls -lh target/*.jar
 
@@ -126,12 +126,12 @@ jobs:
       - name: Deploy Plugin to Jira
         run: |
           mkdir -p /var/atlassian/application-data/jira/plugins/installed-plugins
-          cp target/*.jar /var/atlassian/application-data/jira/plugins/installed-plugins/
+          cp paperless-forms-plugin/target/*.jar /var/atlassian/application-data/jira/plugins/installed-plugins/
           echo "Plugin successfully injected into Jira Home!"
 
       - name: Start Jira
         run: |
-          # ط§ط¬ط±ط§غŒ ط¬غŒط±ط§ ط¨ط§ ط¬ط§ظˆط§ 21
+          # اجرای جیرا با جاوا 21
           /opt/atlassian/jira/bin/start-jira.sh
           echo "Waiting for Jira to start..."
           for i in {1..60}; do
@@ -162,6 +162,3 @@ jobs:
         run: |
           cat /opt/atlassian/jira/logs/catalina.out || true
           cat /var/atlassian/application-data/jira/log/atlassian-jira.log || true
-
-
-
