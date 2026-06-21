@@ -136,6 +136,10 @@ jobs:
 
       - name: Start Jira
         run: |
+          # تنظیم صریح جاوا هوم در داخل فایل ست‌ان‌و برای اطمینان صد در صد
+          sed -i "1s|^|export JAVA_HOME=\"$JAVA_HOME\"\n|" /opt/atlassian/jira/bin/setenv.sh
+          sed -i "2s|^|export JRE_HOME=\"$JAVA_HOME\"\n|" /opt/atlassian/jira/bin/setenv.sh
+          
           # اجرای جیرا با جاوا 21
           /opt/atlassian/jira/bin/start-jira.sh
           echo "Waiting for Jira to start..."
