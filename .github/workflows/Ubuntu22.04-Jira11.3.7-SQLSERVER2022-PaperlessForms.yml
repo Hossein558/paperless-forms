@@ -17,7 +17,7 @@ jobs:
         env:
           ACCEPT_EULA: Y
           SA_PASSWORD: "YourStrong@Passw0rd"
-          MSSQL_PID: Developer
+          MSSQL_PID: ${{ secrets.SQLSERVER_2022_ENTERPRISE_CORE_KEY }}
         ports:
           - 1433:1433
 
