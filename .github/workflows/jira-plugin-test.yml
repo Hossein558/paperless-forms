@@ -1,10 +1,10 @@
-name: Test Jira Plugin
+﻿name: Test Jira Plugin
 
 on:
-  workflow_dispatch:  # اجرای دستی
+  workflow_dispatch:  # ط§ط¬ط±ط§غŒ ط¯ط³طھغŒ
 #   push:
 #     branches: [ main ]
-#   pull_request:       # تریگر خودکار با PR
+#   pull_request:       # طھط±غŒع¯ط± ط®ظˆط¯ع©ط§ط± ط¨ط§ PR
 #     branches: [ main ]
 
 jobs:
@@ -16,3 +16,4 @@ jobs:
         run: |
           lsb_release -a
           uname -a
+

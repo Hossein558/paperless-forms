@@ -1,4 +1,4 @@
-name: Jira 10.3.22 CI (Ubuntu 22.04)
+﻿name: Jira 11.3.7 CI (Ubuntu 22.04)
 
 on:
   workflow_dispatch:
@@ -25,22 +25,22 @@ jobs:
       - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
         with:
-          repository: 'Hossein558/Jira-persian-calender'
+          repository: 'Hossein558/paperless-forms'
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: '.'
 
-      # Jira 10.x STRICTLY requires Java 17
-      - name: Set up JDK 17 (Temurin)
+      # ط®ط§ظ†ظˆط§ط¯ظ‡ ط¬غŒط±ط§ 11 ط¨ظ‡ ط¬ط§ظˆط§ 21 ظ†غŒط§ط² ط¯ط§ط±ظ†ط¯
+      - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
-      # تنظیم Maven Compiler برای جاوا ۱۷
+      # طھظ†ط¸غŒظ… Maven Compiler ط¨ط±ط§غŒ ط¬ط§ظˆط§ 21
       - name: Build Plugin with Maven
         run: |
           chmod +x mvnw
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=17 -Dmaven.compiler.target=17
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
           echo "Build successful. Artifacts in target/:"
           ls -lh target/*.jar
 
@@ -75,12 +75,12 @@ jobs:
           ALTER DATABASE jiradb SET READ_COMMITTED_SNAPSHOT ON;
           "
 
-      - name: Download and install Jira 10.3.22
+      - name: Download and install Jira 11.3.7
         run: |
-          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-10.3.22.tar.gz
-          tar -xzf atlassian-jira-software-10.3.22.tar.gz
+          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-11.3.7.tar.gz
+          tar -xzf atlassian-jira-software-11.3.7.tar.gz
           sudo mkdir -p /opt/atlassian
-          sudo mv atlassian-jira-software-10.3.22-standalone /opt/atlassian/jira
+          sudo mv atlassian-jira-software-11.3.7-standalone /opt/atlassian/jira
           sudo chown -R $USER:$USER /opt/atlassian
 
       - name: Download SQL Server JDBC Driver
@@ -131,7 +131,7 @@ jobs:
 
       - name: Start Jira
         run: |
-          # اجرای جیرا با جاوا ۱۷
+          # ط§ط¬ط±ط§غŒ ط¬غŒط±ط§ ط¨ط§ ط¬ط§ظˆط§ 21
           /opt/atlassian/jira/bin/start-jira.sh
           echo "Waiting for Jira to start..."
           for i in {1..60}; do
@@ -150,7 +150,7 @@ jobs:
       - name: Verify Plugin Initialization
         run: |
           echo "Checking logs for plugin initialization..."
-          grep -i "Jira-persian-calender" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
+          grep -i "paperless-forms" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
 
       - name: Stop Jira
         if: always()

@@ -1,4 +1,4 @@
-name: Jira Plugin - Ubuntu 24.04
+﻿name: Jira Plugin - Ubuntu 24.04
 
 on:
   workflow_dispatch:
@@ -10,5 +10,6 @@ jobs:
     steps:
       - name: Check Ubuntu version
         run: |
-          echo "🎯 Quick test on Ubuntu 24.04"
+          echo "ًںژ¯ Quick test on Ubuntu 24.04"
           lsb_release -a
+

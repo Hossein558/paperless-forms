@@ -1,4 +1,4 @@
-name: Test Plugin - Jira 11.3.7
+﻿name: Test Plugin - Jira 11.3.7
 
 on:
   workflow_dispatch:
@@ -33,3 +33,4 @@ jobs:
         run: |
           sudo systemctl status jira || true
           ls -la /opt/atlassian/ || true
+

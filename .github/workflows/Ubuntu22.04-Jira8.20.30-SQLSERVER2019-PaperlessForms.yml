@@ -1,11 +1,11 @@
-name: Jira 9.4.30 CI (Ubuntu 22.04)
+﻿name: Jira 8.20.30 CI (Ubuntu 22.04)
 
 on:
   workflow_dispatch:
 #   push:
-#     branches: [ main, master, develop ]
+#     branches: [ main, develop ]
 #   pull_request:
-#     branches: [ main, master ]
+#     branches: [ main ]
 
 jobs:
   test:
@@ -22,23 +22,26 @@ jobs:
           - 1433:1433
 
     steps:
+      # طھط؛غŒغŒط± ط§ط¹ظ…ط§ظ„ ط´ط¯ظ‡: ع©ظ„ظˆظ† ع©ط±ط¯ظ† ط±غŒظ¾ط§ط²غŒطھظˆط±غŒ ظ¾ط±ط§غŒظˆطھ ط¨ط§ ط§ط³طھظپط§ط¯ظ‡ ط§ط² طھظˆع©ظ†
       - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
         with:
-          repository: 'Hossein558/Jira-persian-calender'
+          repository: 'Hossein558/paperless-forms'
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: '.'
 
-      - name: Set up JDK 11 (Temurin)
+      # Jira 8.x STRICTLY requires Java 8
+      - name: Set up JDK 8 (Temurin)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '8'
 
+      # ظ…ط±ط­ظ„ظ‡ ط¨غŒظ„ط¯: ط¯ط± ط§غŒظ†ط¬ط§ طھظ†ط¸غŒظ…ط§طھ pom.xml ط±ط§ ط¨ط±ط§غŒ ط¬ط§ظˆط§ غ¸ ط¨ط§ط²ظ†ظˆغŒط³غŒ ظ…غŒâ€Œع©ظ†غŒظ…
       - name: Build Plugin with Maven
         run: |
           chmod +x mvnw
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=11 -Dmaven.compiler.target=11
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=1.8 -Dmaven.compiler.target=1.8
           echo "Build successful. Artifacts in target/:"
           ls -lh target/*.jar
 
@@ -73,19 +76,20 @@ jobs:
           ALTER DATABASE jiradb SET READ_COMMITTED_SNAPSHOT ON;
           "
 
-      - name: Download and install Jira 9.4.30
+      - name: Download and install Jira 8.20.30
         run: |
-          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-9.4.30.tar.gz
-          tar -xzf atlassian-jira-software-9.4.30.tar.gz
+          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-8.20.30.tar.gz
+          tar -xzf atlassian-jira-software-8.20.30.tar.gz
           sudo mkdir -p /opt/atlassian
-          sudo mv atlassian-jira-software-9.4.30-standalone /opt/atlassian/jira
-          # تغییر مالکیت پوشه به کاربر فعلی برای اجرای بدون sudo
+          sudo mv atlassian-jira-software-8.20.30-standalone /opt/atlassian/jira
+          # طھط؛غŒغŒط± ظ…ط§ظ„ع©غŒطھ ظ¾ظˆط´ظ‡ ط¨ظ‡ ع©ط§ط±ط¨ط± ظپط¹ظ„غŒ ط¨ط±ط§غŒ ط§ط¬ط±ط§غŒ ط¨ط¯ظˆظ† sudo
           sudo chown -R $USER:$USER /opt/atlassian
 
+      # ط§ط³طھظپط§ط¯ظ‡ ط§ط² ط¯ط±ط§غŒظˆط± SQL Server ظ…ط®طµظˆطµ ط¬ط§ظˆط§ غ¸ (jre8)
       - name: Download SQL Server JDBC Driver
         run: |
-          wget -q https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.8.1.jre11/mssql-jdbc-12.8.1.jre11.jar
-          cp mssql-jdbc-12.8.1.jre11.jar /opt/atlassian/jira/lib/
+          wget -q https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.8.1.jre8/mssql-jdbc-12.8.1.jre8.jar
+          cp mssql-jdbc-12.8.1.jre8.jar /opt/atlassian/jira/lib/
 
       - name: Configure Jira home directory
         run: |
@@ -130,7 +134,7 @@ jobs:
 
       - name: Start Jira
         run: |
-          # اجرای جیرا با جاوا ۱۱
+          # ط§ط¬ط±ط§غŒ ط¬غŒط±ط§ 
           /opt/atlassian/jira/bin/start-jira.sh
           echo "Waiting for Jira to start..."
           for i in {1..60}; do
@@ -149,7 +153,7 @@ jobs:
       - name: Verify Plugin Initialization
         run: |
           echo "Checking logs for plugin initialization..."
-          grep -i "Jira-persian-calender" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
+          grep -i "paperless-forms" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
 
       - name: Stop Jira
         if: always()
