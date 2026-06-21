@@ -1,4 +1,4 @@
-﻿name: Jira 9.4.30 CI (Ubuntu 22.04)
+﻿name: Jira 9.12.36 CI (Ubuntu 22.04)
 
 on:
   workflow_dispatch:
@@ -25,10 +25,11 @@ jobs:
       - name: Checkout Private Jira Repo
         uses: actions/checkout@v4
         with:
-          repository: 'Hossein558/paperless-forms'
+          repository: 'Hossein558/Jira-persian-calender'
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: '.'
 
+      # Jira 9.x STRICTLY requires Java 11
       - name: Set up JDK 11 (Temurin)
         uses: actions/setup-java@v3
         with:
@@ -73,13 +74,12 @@ jobs:
           ALTER DATABASE jiradb SET READ_COMMITTED_SNAPSHOT ON;
           "
 
-      - name: Download and install Jira 9.4.30
+      - name: Download and install Jira 9.12.36
         run: |
-          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-9.4.30.tar.gz
-          tar -xzf atlassian-jira-software-9.4.30.tar.gz
+          wget -q https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-9.12.36.tar.gz
+          tar -xzf atlassian-jira-software-9.12.36.tar.gz
           sudo mkdir -p /opt/atlassian
-          sudo mv atlassian-jira-software-9.4.30-standalone /opt/atlassian/jira
-          # طھط؛غŒغŒط± ظ…ط§ظ„ع©غŒطھ ظ¾ظˆط´ظ‡ ط¨ظ‡ ع©ط§ط±ط¨ط± ظپط¹ظ„غŒ ط¨ط±ط§غŒ ط§ط¬ط±ط§غŒ ط¨ط¯ظˆظ† sudo
+          sudo mv atlassian-jira-software-9.12.36-standalone /opt/atlassian/jira
           sudo chown -R $USER:$USER /opt/atlassian
 
       - name: Download SQL Server JDBC Driver
@@ -149,7 +149,7 @@ jobs:
       - name: Verify Plugin Initialization
         run: |
           echo "Checking logs for plugin initialization..."
-          grep -i "paperless-forms" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
+          grep -i "Jira-persian-calender" /var/atlassian/application-data/jira/log/atlassian-jira.log || echo "Plugin log not found yet, it might still be loading in the background."
 
       - name: Stop Jira
         if: always()
@@ -161,3 +161,4 @@ jobs:
         run: |
           cat /opt/atlassian/jira/logs/catalina.out || true
           cat /var/atlassian/application-data/jira/log/atlassian-jira.log || true
+

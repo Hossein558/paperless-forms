@@ -13,3 +13,4 @@ jobs:
           echo "ًںژ¯ Quick test on Ubuntu 24.04"
           lsb_release -a
 
+
