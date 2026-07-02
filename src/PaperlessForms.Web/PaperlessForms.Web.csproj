@@ -5,9 +5,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Aspose.Total.lic">
+    <None Update="..\..\LocalDependencies\Aspose.Total.NET.lic">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aspose.Cells">
+      <HintPath>..\..\LocalDependencies\Aspose.Cells.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup>

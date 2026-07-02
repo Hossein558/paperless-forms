@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ─── Aspose.Cells License ───────────────────────────────
 var licPath = builder.Configuration["Aspose:LicensePath"]
-              ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.lic");
+              ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.NET.lic");
 if (File.Exists(licPath))
 {
     try

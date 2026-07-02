@@ -1,13 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Aspose.Cells" Version="25.1.0" />
+    <Reference Include="Aspose.Cells">
+      <HintPath>..\..\LocalDependencies\Aspose.Cells.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
