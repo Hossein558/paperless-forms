@@ -154,7 +154,7 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
         });
     }
 
-    public async Task<bool> SaveSubmissionAsync(InspectionSubmission submission)
+    public async Task<(bool IsSuccess, string ErrorMessage)> SaveSubmissionAsync(InspectionSubmission submission)
     {
         await _writeLock.WaitAsync();
         try
@@ -166,29 +166,47 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
             int row = 1;
             while (!string.IsNullOrWhiteSpace(sheet.Cells[row, 0].StringValue))
             {
-                // اگر همین Id وجود داشت، آن ردیف را بروزرسانی کن
                 if (sheet.Cells[row, 0].StringValue == submission.Id.ToString())
                 {
                     WriteSubmissionToRow(sheet, row, submission);
-                    workbook.Save(_submissionsPath);
-                    return true;
+                    return SaveWithRetry(workbook, _submissionsPath);
                 }
                 row++;
             }
 
             // ردیف جدید
             WriteSubmissionToRow(sheet, row, submission);
-            workbook.Save(_submissionsPath);
-            return true;
+            return SaveWithRetry(workbook, _submissionsPath);
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            Console.WriteLine($"Error saving submission: {ex.Message}");
+            return (false, "خطای سیستمی در اکسل: " + ex.Message);
         }
         finally
         {
             _writeLock.Release();
         }
+    }
+
+    private (bool IsSuccess, string ErrorMessage) SaveWithRetry(Workbook workbook, string path)
+    {
+        Exception? lastError = null;
+        for (int i = 0; i < 3; i++)
+        {
+            try
+            {
+                workbook.Save(path);
+                return (true, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                Console.WriteLine($"Retry {i+1} failed: {ex.Message}");
+                Thread.Sleep(500);
+            }
+        }
+        return (false, "فایل اکسل توسط پروسه یا شخص دیگری باز است و قفل شده است: " + lastError?.Message);
     }
 
     private static void WriteSubmissionToRow(Worksheet sheet, int row, InspectionSubmission submission)

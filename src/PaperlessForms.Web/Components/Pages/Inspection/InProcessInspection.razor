@@ -203,7 +203,7 @@
                 }
                 @if (_saveSuccess == false)
                 {
-                    <div class="alert-error">❌ خطا در ذخیره‌سازی. لطفاً دوباره تلاش کنید.</div>
+                    <div class="alert-error">❌ خطا در ذخیره‌سازی: @_errorMessage</div>
                 }
                 <button class="btn-success-rtl btn-lg" @onclick="SubmitFormAsync" disabled="@_isSaving">
                     @if (_isSaving) { <span>⏳ در حال ذخیره...</span> }
@@ -280,11 +280,19 @@
     {
         _isSaving = true;
         _saveSuccess = null;
+        _errorMessage = null;
         StateHasChanged();
 
         _submission.SubmittedAt = DateTime.Now;
         _submission.Status = "Submitted";
-        _saveSuccess = await InspectionRepo.SaveSubmissionAsync(_submission);
+        
+        var result = await InspectionRepo.SaveSubmissionAsync(_submission);
+        _saveSuccess = result.IsSuccess;
+        if (!result.IsSuccess)
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+        
         _isSaving = false;
     }
 

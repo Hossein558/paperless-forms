@@ -12,5 +12,5 @@ public interface IInspectionRepository
 {
     Task<List<InspectionSubmission>> GetSubmissionsAsync(string? partCode = null, DateTime? from = null, DateTime? to = null);
     Task<InspectionSubmission?> GetByIdAsync(Guid id);
-    Task<bool> SaveSubmissionAsync(InspectionSubmission submission);
+    Task<(bool IsSuccess, string ErrorMessage)> SaveSubmissionAsync(InspectionSubmission submission);
 }
