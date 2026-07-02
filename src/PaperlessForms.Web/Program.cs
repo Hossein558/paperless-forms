@@ -8,11 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 // ─── Aspose.Cells License ───────────────────────────────
 var licPath = builder.Configuration["Aspose:LicensePath"]
               ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.lic");
-//if (File.Exists(licPath))
-//{
-//    var license = new License();
-//    license.SetLicense(licPath);
-//}
+if (File.Exists(licPath))
+{
+    try
+    {
+        var license = new License();
+        license.SetLicense(licPath);
+        Console.WriteLine("Aspose License applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"WARNING: Failed to apply Aspose License: {ex.Message}");
+    }
+}
 
 
 // ─── Data Services ──────────────────────────────────────
