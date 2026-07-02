@@ -1,0 +1,334 @@
+@page "/inspection/in-process"
+@rendermode InteractiveServer
+@using PaperlessForms.Core.Interfaces
+@using PaperlessForms.Core.Models
+@inject IPartRepository PartRepo
+@inject IInspectionRepository InspectionRepo
+
+<PageTitle>بازرسی حین فرآیند تولید - Paperless Forms</PageTitle>
+
+<div class="form-page">
+    <!-- ─── هدر فرم ─── -->
+    <div class="form-header">
+        <div class="form-header-logo">
+            <span class="company-logo">CROUSE</span>
+        </div>
+        <div class="form-header-title">
+            <h1>بازرسی حین فرآیند تولید</h1>
+        </div>
+        <div class="form-header-meta">
+            <table class="meta-table">
+                <tr><td>کد فرم:</td><td><strong>F-IT-23/05</strong></td></tr>
+                <tr><td>ویرایش:</td><td><strong>01</strong></td></tr>
+                <tr><td>شماره صفحه:</td><td><strong>@_submission.PageNumber</strong></td></tr>
+            </table>
+        </div>
+    </div>
+
+    @if (_currentStep == Step.EnterPartCode)
+    {
+        <!-- ─── گام ۱: ورود کد قطعه ─── -->
+        <div class="step-card">
+            <h2 class="step-title">📦 مرحله ۱: ورود کد قطعه</h2>
+            <div class="input-group-rtl">
+                <label for="partCodeInput">کد قطعه / محصول:</label>
+                <input id="partCodeInput"
+                       type="text"
+                       class="form-control-rtl"
+                       @bind="_partCodeInput"
+                       @bind:event="oninput"
+                       @onkeydown="OnPartCodeKeyDown"
+                       placeholder="کد قطعه را وارد کنید..."
+                       autocomplete="off" />
+                <button class="btn-primary-rtl" @onclick="LoadPartInfoAsync" disabled="@_isLoading">
+                    @if (_isLoading) { <span>⏳ در حال جستجو...</span> }
+                    else { <span>🔍 جستجو</span> }
+                </button>
+            </div>
+            @if (_errorMessage != null)
+            {
+                <div class="alert-error">⚠️ @_errorMessage</div>
+            }
+        </div>
+    }
+
+    @if (_currentStep >= Step.ConfirmPartInfo && _selectedPart != null)
+    {
+        <!-- ─── گام ۲: تایید اطلاعات قطعه ─── -->
+        <div class="step-card @(_currentStep == Step.ConfirmPartInfo ? "step-active" : "step-done")">
+            <h2 class="step-title">
+                @if (_currentStep == Step.ConfirmPartInfo)
+                { <span>✅ مرحله ۲: تایید اطلاعات پایه</span> }
+                else
+                { <span>✅ اطلاعات قطعه تایید شد</span> }
+            </h2>
+            <div class="part-info-grid">
+                <div class="info-row">
+                    <span class="info-label">نام قطعه / محصول:</span>
+                    <span class="info-value"><strong>@_selectedPart.PartName</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">کد قطعه:</span>
+                    <span class="info-value"><strong>@_selectedPart.PartCode</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">نام / کد ایستگاه بازرسی:</span>
+                    <span class="info-value">@_selectedPart.InspectionStationName (@_selectedPart.InspectionStationCode)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">کد ماشین:</span>
+                    <span class="info-value">@_selectedPart.MachineCode</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">شماره برنامه کنترل:</span>
+                    <span class="info-value">@_selectedPart.ControlProgramNumber</span>
+                </div>
+            </div>
+
+            @if (_currentStep == Step.ConfirmPartInfo)
+            {
+                <div class="btn-group-rtl">
+                    <button class="btn-success-rtl" @onclick="ConfirmPartInfo">✅ تایید و ادامه</button>
+                    <button class="btn-secondary-rtl" @onclick="ResetForm">🔄 تغییر کد قطعه</button>
+                </div>
+            }
+        </div>
+    }
+
+    @if (_currentStep == Step.FillForm && _selectedPart != null)
+    {
+        <!-- ─── گام ۳: تکمیل جدول بازرسی ─── -->
+        <div class="step-card step-active">
+            <h2 class="step-title">📋 مرحله ۳: تکمیل جدول بازرسی</h2>
+
+            <div class="inspector-info">
+                <div class="input-row-rtl">
+                    <label>نام بازرس:</label>
+                    <input type="text" class="form-control-rtl-sm" @bind="_submission.InspectorName" placeholder="نام بازرس..." />
+                </div>
+            </div>
+
+            <!-- جدول بازرسی -->
+            <div class="inspection-table-wrapper">
+                <table class="inspection-table">
+                    <thead>
+                        <tr>
+                            <th class="col-row-num">ردیف</th>
+                            <th class="col-param">آیتم کنترلی</th>
+                            <th class="col-criteria">معیار پذیرش</th>
+                            <th class="col-method">روش کنترل</th>
+                            <th class="col-min">حد پایین</th>
+                            <th class="col-max">حد بالا</th>
+                            <th class="col-sample">نمونه ۱</th>
+                            <th class="col-sample">نمونه ۲</th>
+                            <th class="col-sample">نمونه ۳</th>
+                            <th class="col-sample">نمونه ۴</th>
+                            <th class="col-sample">نمونه ۵</th>
+                            <th class="col-ok">Job Setup</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _submission.Rows)
+                        {
+                            <tr class="@GetRowClass(row)">
+                                <td class="col-row-num">@row.RowNumber</td>
+                                <td class="col-param">@row.ParameterName</td>
+                                <td class="col-criteria" title="@row.ControlItem">
+                                    <span class="criteria-short">@TruncateText(row.ControlItem, 40)</span>
+                                </td>
+                                <td class="col-method">@row.ControlMethod</td>
+                                <td class="col-min">@row.MinValue?.ToString("G4")</td>
+                                <td class="col-max">@row.MaxValue?.ToString("G4")</td>
+                                @for (int s = 0; s < 5; s++)
+                                {
+                                    int sampleIdx = s;
+                                    <td class="col-sample @GetSampleClass(row, sampleIdx)">
+                                        @if (row.MinValue.HasValue || row.MaxValue.HasValue)
+                                        {
+                                            <!-- فیلد عددی با اعتبارسنجی رنج -->
+                                            <input type="number"
+                                                   class="sample-input"
+                                                   step="0.001"
+                                                   value="@row.Samples[sampleIdx]"
+                                                   @oninput="@(e => UpdateSample(row, sampleIdx, e.Value?.ToString()))" />
+                                        }
+                                        else
+                                        {
+                                            <!-- فیلد OK/NOK برای پارامترهای کیفی -->
+                                            <select class="sample-select"
+                                                    value="@GetQualitativeSampleText(row, sampleIdx)"
+                                                    @onchange="@(e => SetQualitativeSample(row, sampleIdx, e.Value?.ToString()))">
+                                                <option value="">-</option>
+                                                <option value="1">OK ✅</option>
+                                                <option value="0">NOK ❌</option>
+                                            </select>
+                                        }
+                                    </td>
+                                }
+                                <td class="col-ok">
+                                    <div class="radio-group">
+                                        <label>
+                                            <input type="radio" name="js_@row.RowNumber"
+                                                   value="true"
+                                                   checked="@(row.JobSetupOk == true)"
+                                                   @onchange="@(() => row.JobSetupOk = true)" /> OK
+                                        </label>
+                                        <label>
+                                            <input type="radio" name="js_@row.RowNumber"
+                                                   value="false"
+                                                   checked="@(row.JobSetupOk == false)"
+                                                   @onchange="@(() => row.JobSetupOk = false)" /> NOK
+                                        </label>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- اطلاعات امضا -->
+            <div class="signature-section">
+                <div class="sig-item">
+                    <label>نام سرپرست کنترل کیفیت:</label>
+                    <input type="text" class="form-control-rtl-sm" @bind="_submission.QcSupervisorName" placeholder="نام سرپرست..." />
+                </div>
+            </div>
+
+            <!-- دکمه‌های عملیاتی -->
+            <div class="action-buttons">
+                @if (_saveSuccess == true)
+                {
+                    <div class="alert-success">✅ فرم با موفقیت ذخیره شد!</div>
+                }
+                @if (_saveSuccess == false)
+                {
+                    <div class="alert-error">❌ خطا در ذخیره‌سازی. لطفاً دوباره تلاش کنید.</div>
+                }
+                <button class="btn-success-rtl btn-lg" @onclick="SubmitFormAsync" disabled="@_isSaving">
+                    @if (_isSaving) { <span>⏳ در حال ذخیره...</span> }
+                    else { <span>💾 ثبت و ذخیره فرم</span> }
+                </button>
+                <button class="btn-secondary-rtl" @onclick="ResetForm">🆕 فرم جدید</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private enum Step { EnterPartCode, ConfirmPartInfo, FillForm }
+
+    private Step _currentStep = Step.EnterPartCode;
+    private string _partCodeInput = string.Empty;
+    private Part? _selectedPart;
+    private InspectionSubmission _submission = new();
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool? _saveSuccess;
+    private string? _errorMessage;
+
+    private async Task OnPartCodeKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await LoadPartInfoAsync();
+    }
+
+    private async Task LoadPartInfoAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_partCodeInput)) return;
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _selectedPart = await PartRepo.GetPartByCodeAsync(_partCodeInput.Trim());
+
+        if (_selectedPart == null)
+            _errorMessage = $"قطعه‌ای با کد «{_partCodeInput}» یافت نشد.";
+        else
+            _currentStep = Step.ConfirmPartInfo;
+
+        _isLoading = false;
+    }
+
+    private void ConfirmPartInfo()
+    {
+        if (_selectedPart == null) return;
+
+        // پر کردن هدر Submission
+        _submission.PartCode = _selectedPart.PartCode;
+        _submission.PartName = _selectedPart.PartName;
+        _submission.InspectionStationCode = _selectedPart.InspectionStationCode;
+        _submission.MachineCode = _selectedPart.MachineCode;
+        _submission.ControlProgramNumber = _selectedPart.ControlProgramNumber;
+
+        // ایجاد ردیف‌های جدول بر اساس پارامترهای قطعه
+        _submission.Rows = _selectedPart.Parameters.Select(p => new InspectionRow
+        {
+            RowNumber = p.RowNumber,
+            ParameterName = p.ParameterName,
+            ControlItem = p.AcceptanceCriteria,
+            ControlMethod = p.ControlMethod,
+            MinValue = p.MinValue,
+            MaxValue = p.MaxValue,
+            Unit = p.Unit,
+            Samples = new double?[5]
+        }).ToList();
+
+        _currentStep = Step.FillForm;
+    }
+
+    private async Task SubmitFormAsync()
+    {
+        _isSaving = true;
+        _saveSuccess = null;
+        StateHasChanged();
+
+        _submission.SubmittedAt = DateTime.Now;
+        _submission.Status = "Submitted";
+        _saveSuccess = await InspectionRepo.SaveSubmissionAsync(_submission);
+        _isSaving = false;
+    }
+
+    private void ResetForm()
+    {
+        _currentStep = Step.EnterPartCode;
+        _partCodeInput = string.Empty;
+        _selectedPart = null;
+        _submission = new InspectionSubmission();
+        _saveSuccess = null;
+        _errorMessage = null;
+    }
+
+    private void UpdateSample(InspectionRow row, int idx, string? value)
+    {
+        if (double.TryParse(value, out var d))
+            row.Samples[idx] = d;
+        else
+            row.Samples[idx] = null;
+        StateHasChanged();
+    }
+
+    private string GetQualitativeSampleText(InspectionRow row, int idx)
+        => row.Samples[idx].HasValue ? row.Samples[idx]!.Value.ToString("0") : "";
+
+    private void SetQualitativeSample(InspectionRow row, int idx, string? value)
+    {
+        if (double.TryParse(value, out var d)) row.Samples[idx] = d;
+        else row.Samples[idx] = null;
+        StateHasChanged();
+    }
+
+    private string GetRowClass(InspectionRow row)
+        => row.IsValid ? "" : "row-invalid";
+
+    private string GetSampleClass(InspectionRow row, int idx)
+    {
+        if (!row.Samples[idx].HasValue) return "";
+        if (!row.MinValue.HasValue && !row.MaxValue.HasValue) return "";
+        bool ok = (!row.MinValue.HasValue || row.Samples[idx]!.Value >= row.MinValue.Value) &&
+                  (!row.MaxValue.HasValue || row.Samples[idx]!.Value <= row.MaxValue.Value);
+        return ok ? "sample-ok" : "sample-nok";
+    }
+
+    private static string TruncateText(string text, int maxLen)
+        => text.Length <= maxLen ? text : text[..maxLen] + "...";
+}

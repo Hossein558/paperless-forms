@@ -1,0 +1,48 @@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">
+            <span class="brand-icon">🏭</span> Paperless Forms
+        </a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="nav-icon">🏠</span> داشبورد
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title">فرم‌های بازرسی</div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="inspection/in-process">
+                <span class="nav-icon">🔍</span> بازرسی حین فرآیند
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title">گزارش‌ها</div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="reports">
+                <span class="nav-icon">📊</span> گزارش‌گیری
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="admin">
+                <span class="nav-icon">⚙️</span> مدیریت داده‌های پایه
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+}

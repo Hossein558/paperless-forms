@@ -1,0 +1,49 @@
+using PaperlessForms.Web.Components;
+using PaperlessForms.Core.Services;
+using PaperlessForms.Core.Interfaces;
+using Aspose.Cells;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ─── Aspose.Cells License ───────────────────────────────
+var licPath = builder.Configuration["Aspose:LicensePath"]
+              ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.lic");
+//if (File.Exists(licPath))
+//{
+//    var license = new License();
+//    license.SetLicense(licPath);
+//}
+
+
+// ─── Data Services ──────────────────────────────────────
+var dataFolder = builder.Configuration["Data:FolderPath"]
+                 ?? @"\\datap2\Atlassian\Jira\sharedhome\paperless forms";
+
+// Fallback برای محیط توسعه
+if (!Directory.Exists(dataFolder))
+    dataFolder = Path.Combine(AppContext.BaseDirectory, "Data");
+Directory.CreateDirectory(dataFolder);
+
+var excelService = new ExcelDataService(dataFolder);
+builder.Services.AddSingleton<IPartRepository>(excelService);
+builder.Services.AddSingleton<IInspectionRepository>(excelService);
+
+// ─── Razor Components / Blazor ──────────────────────────
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseAntiforgery();
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();
