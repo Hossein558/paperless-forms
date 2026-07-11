@@ -9,24 +9,21 @@ using Microsoft.AspNetCore.Authentication;
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── Aspose.Cells License ───────────────────────────────
+// The license file must exist in the build output directory.
+// It is configured in PaperlessForms.Web.csproj with CopyToOutputDirectory=PreserveNewest.
 var licPath = builder.Configuration["Aspose:LicensePath"]
               ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.lic");
-// Also look beside the .exe/dll if not found in base directory
+
 if (!File.Exists(licPath))
-    licPath = Path.Combine(AppContext.BaseDirectory, "Aspose.Total.NET.lic");
-if (File.Exists(licPath))
-{
-    try
-    {
-        var license = new License();
-        license.SetLicense(licPath);
-        Console.WriteLine("Aspose License applied successfully.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"WARNING: Failed to apply Aspose License: {ex.Message}");
-    }
-}
+    throw new FileNotFoundException(
+        $"[CRITICAL] Aspose license file not found at '{licPath}'. " +
+        "Ensure 'Aspose.Total.lic' is present and set to CopyToOutputDirectory in the .csproj. " +
+        "Application cannot start in Evaluation mode.");
+
+var aspLicense = new License();
+aspLicense.SetLicense(licPath);
+Console.WriteLine($"[Aspose] License applied successfully from: {licPath}");
+
 
 
 // ─── Data Services ──────────────────────────────────────

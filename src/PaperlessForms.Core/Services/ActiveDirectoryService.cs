@@ -51,7 +51,8 @@ public class ActiveDirectoryService
     /// </summary>
     private (bool, string, ClaimsPrincipal?) BuildPrincipal(string username, string password, ClaimsPrincipal tempPrincipal)
     {
-        string displayName = username; // default fallback
+        // CRITICAL: Inspector Name must NEVER be blank. Multiple fallback layers are used.
+        string displayName = username; // guaranteed fallback — always non-blank
 
         try
         {
@@ -59,41 +60,64 @@ public class ActiveDirectoryService
             searchLdap.RuntimeLicense = RuntimeLicense;
             searchLdap.ServerName = _ldapServer;
             searchLdap.ServerPort = 389;
-            searchLdap.Timeout = 10;
+            searchLdap.Timeout = 15;
             searchLdap.DN = $"{username}@{_domain}";
             searchLdap.Password = password;
             searchLdap.Bind();
 
-            // Base DN derived from domain: Crouseco.com -> DC=Crouseco,DC=com
-            string baseDn = string.Join(",", _domain.Split('.').Select(p => $"DC={p}"));
+            // Broad subtree search from domain root
             string filter = $"(sAMAccountName={username})";
 
-            // OnSearchResult fires for each result entry — read the attribute via Attr()
-            string foundDisplayName = username;
+            string foundName = string.Empty;
             searchLdap.OnSearchResult += (s, e) =>
             {
-                // e contains the DN; attributes are read from ldap.Attr() after event fires
-                try
+                // Try displayName first, then cn, then name — in priority order
+                string[] candidateAttrs = { "displayName", "cn", "name" };
+                foreach (var attrName in candidateAttrs)
                 {
-                    string val = searchLdap.Attr("displayName");
-                    if (!string.IsNullOrWhiteSpace(val))
-                        foundDisplayName = val;
+                    try
+                    {
+                        string val = searchLdap.Attr(attrName);
+                        if (!string.IsNullOrWhiteSpace(val))
+                        {
+                            foundName = val;
+                            Console.WriteLine($"[LDAP] Found '{attrName}' = '{val}' for user '{username}'");
+                            break; // stop at first non-empty attribute
+                        }
+                    }
+                    catch (Exception attrEx)
+                    {
+                        Console.WriteLine($"[LDAP WARN] Attr('{attrName}') threw: {attrEx.Message}");
+                    }
                 }
-                catch { /* attribute may not exist */ }
             };
 
+            // Base DN derived from domain: Crouseco.com -> DC=Crouseco,DC=com
+            string baseDn = string.Join(",", _domain.Split('.').Select(p => $"DC={p}"));
+
+            // WholeSubtree scope so nested OUs are included
             searchLdap.SearchScope = LDAPSearchScopes.ssWholeSubtree;
+            
+            // IPWorks LDAP uses the DN property as the SearchBase!
+            searchLdap.DN = baseDn;
             searchLdap.Search(filter);
 
-            displayName = foundDisplayName;
-            Console.WriteLine($"[LDAP] Retrieved displayName: '{displayName}' for user '{username}'");
-
             searchLdap.Unbind();
+
+            if (!string.IsNullOrWhiteSpace(foundName))
+            {
+                displayName = foundName;
+                Console.WriteLine($"[LDAP] Using displayName='{displayName}' for user '{username}'");
+            }
+            else
+            {
+                Console.WriteLine($"[LDAP WARN] No name attribute returned by AD for '{username}'. Falling back to username.");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LDAP WARN] Could not fetch displayName: {ex.Message}. Falling back to username.");
-            displayName = username;
+            Console.WriteLine($"[LDAP WARN] displayName search failed: {ex.Message}. Falling back to username '{username}'.");
+            // displayName is already set to username — guaranteed non-blank
         }
 
         var claims = new List<Claim>

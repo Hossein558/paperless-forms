@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="..\..\LocalDependencies\Aspose.Total.NET.lic">
+    <None Update="Aspose.Total.lic">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
