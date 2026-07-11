@@ -10,5 +10,8 @@
       <HintPath>..\..\LocalDependencies\Aspose.Cells.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="nsoftware.IPWorksAuth" Version="24.0.9545" />
+  </ItemGroup>
 
 </Project>

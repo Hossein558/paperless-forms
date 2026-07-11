@@ -1,5 +1,6 @@
 @page "/inspection/in-process"
 @rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @using PaperlessForms.Core.Interfaces
 @using PaperlessForms.Core.Models
 @inject IPartRepository PartRepo
@@ -89,7 +90,7 @@
             {
                 <div class="btn-group-rtl">
                     <button class="btn-success-rtl" @onclick="ConfirmPartInfo">✅ تایید و ادامه</button>
-                    <button class="btn-secondary-rtl" @onclick="ResetForm">🔄 تغییر کد قطعه</button>
+                    <button class="btn-secondary-rtl" @onclick="ResetFormAsync">🔄 تغییر کد قطعه</button>
                 </div>
             }
         </div>
@@ -104,7 +105,7 @@
             <div class="inspector-info">
                 <div class="input-row-rtl">
                     <label>نام بازرس:</label>
-                    <input type="text" class="form-control-rtl-sm" @bind="_submission.InspectorName" placeholder="نام بازرس..." />
+                    <input type="text" class="form-control-rtl-sm" value="@_submission.InspectorName" readonly style="background-color: #f8f9fa;" />
                 </div>
             </div>
 
@@ -209,13 +210,16 @@
                     @if (_isSaving) { <span>⏳ در حال ذخیره...</span> }
                     else { <span>💾 ثبت و ذخیره فرم</span> }
                 </button>
-                <button class="btn-secondary-rtl" @onclick="ResetForm">🆕 فرم جدید</button>
+                <button class="btn-secondary-rtl" @onclick="ResetFormAsync">🆕 فرم جدید</button>
             </div>
         </div>
     }
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<Microsoft.AspNetCore.Components.Authorization.AuthenticationState>? AuthState { get; set; }
+
     private enum Step { EnterPartCode, ConfirmPartInfo, FillForm }
 
     private Step _currentStep = Step.EnterPartCode;
@@ -296,14 +300,29 @@
         _isSaving = false;
     }
 
-    private void ResetForm()
+    private async Task ResetFormAsync()
     {
         _currentStep = Step.EnterPartCode;
         _partCodeInput = string.Empty;
         _selectedPart = null;
         _submission = new InspectionSubmission();
+        
+        if (AuthState != null)
+        {
+            var authState = await AuthState;
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                _submission.InspectorName = authState.User.Identity.Name ?? "";
+            }
+        }
+        
         _saveSuccess = null;
         _errorMessage = null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ResetFormAsync();
     }
 
     private void UpdateSample(InspectionRow row, int idx, string? value)

@@ -2,6 +2,9 @@ using PaperlessForms.Web.Components;
 using PaperlessForms.Core.Services;
 using PaperlessForms.Core.Interfaces;
 using Aspose.Cells;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +33,7 @@ var dataFolder = builder.Configuration["Data:FolderPath"]
 // Fallback برای محیط توسعه
 if (!Directory.Exists(dataFolder))
 {
-    Console.WriteLine($"Network path '{dataFolder}' is unreachable. Falling back to local Data folder.");
+    Console.WriteLine($"[WARNING] Network directory '{dataFolder}' is unreachable. Initializing local Data folder fallback.");
     dataFolder = Path.Combine(builder.Environment.ContentRootPath, "Data");
 }
 Directory.CreateDirectory(dataFolder);
@@ -40,6 +43,17 @@ builder.Services.AddSingleton<IPartRepository>(excelService);
 builder.Services.AddSingleton<IInspectionRepository>(excelService);
 
 // ─── Razor Components / Blazor ──────────────────────────
+builder.Services.AddScoped<ActiveDirectoryService>();
+
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/login";
+        options.AccessDeniedPath = "/access-denied";
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -53,6 +67,25 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAntiforgery();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapPost("/api/auth/login", async (HttpContext context, [FromForm] string Username, [FromForm] string Password, [FromForm] string? ReturnUrl, ActiveDirectoryService adService) =>
+{
+    var result = await adService.AuthenticateAsync(Username, Password);
+    if (result.IsSuccess)
+    {
+        await context.SignInAsync("Cookies", result.Principal!);
+        return Results.Redirect(string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl);
+    }
+    return Results.Redirect($"/login?ErrorMessage={Uri.EscapeDataString(result.ErrorMessage)}&ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
+});
+
+app.MapPost("/api/auth/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync("Cookies");
+    return Results.Redirect("/login");
+});
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

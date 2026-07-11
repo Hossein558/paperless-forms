@@ -1,0 +1,46 @@
+@page "/login"
+@inject NavigationManager NavManager
+
+<PageTitle>ورود به سیستم - Paperless Forms</PageTitle>
+
+<div class="container mt-5" style="max-width: 400px; margin: auto;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <h2 style="color: var(--primary-color);">CROUSE</h2>
+                <h4 class="text-muted">ورود به سیستم بازرسی</h4>
+            </div>
+            
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger" style="text-align: right;" dir="rtl">@ErrorMessage</div>
+            }
+
+            <form method="post" action="/api/auth/login" dir="rtl">
+                <AntiforgeryToken />
+                <!-- Using a simple form post to our Minimal API endpoint for Cookie Auth -->
+                <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+                
+                <div class="mb-3" style="text-align: right;">
+                    <label class="form-label fw-bold">نام کاربری (Active Directory)</label>
+                    <input type="text" name="Username" class="form-control" dir="ltr" required placeholder="مثال: h.ebrahimi" />
+                </div>
+                
+                <div class="mb-4" style="text-align: right;">
+                    <label class="form-label fw-bold">رمز عبور</label>
+                    <input type="password" name="Password" class="form-control" dir="ltr" required />
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 btn-lg" style="background-color: var(--primary-color);">ورود</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ErrorMessage { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+}
