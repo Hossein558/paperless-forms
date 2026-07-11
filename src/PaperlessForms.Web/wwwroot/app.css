@@ -379,6 +379,22 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important;
 
 /* ── Inspector Info ──────────────────────── */
 .inspector-info { margin-bottom: 1rem; }
+.inspector-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+.inspector-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #c8d0da;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.inspector-details { flex: 1; }
 .input-row-rtl { display: flex; align-items: center; gap: 0.8rem; }
 .input-row-rtl label { font-weight: 500; }
 

@@ -11,7 +11,6 @@ public class ActiveDirectoryService
     private readonly string _domain = "Crouseco.com";
 
     // LDAP server hostname - confirmed resolvable via DNS (172.25.2.3 / 172.25.2.2)
-    // NOTE: "Crouseco.com" is NOT directly resolvable; "ldap.crouseco.com" is the correct LDAP endpoint.
     private readonly string _ldapServer = "ldap.crouseco.com";
 
     // Fallback DC confirmed resolvable at 172.25.96.234
@@ -27,23 +26,87 @@ public class ActiveDirectoryService
 
             // Strategy 1 (PRIMARY): UPN format on ldap.crouseco.com:389
             var (ok1, err1, p1) = TryBind(_ldapServer, 389, $"{username}@{_domain}", password, false, "UPN/389/ldap.crouseco.com");
-            if (ok1) return (true, string.Empty, p1);
+            if (ok1) return BuildPrincipal(username, password, p1!);
 
             // Strategy 2: NetBIOS DOMAIN\user on ldap.crouseco.com:389
             var (ok2, err2, p2) = TryBind(_ldapServer, 389, $"{_netbiosDomain}\\{username}", password, false, "NetBIOS/389/ldap.crouseco.com");
-            if (ok2) return (true, string.Empty, p2);
+            if (ok2) return BuildPrincipal(username, password, p2!);
 
             // Strategy 3: UPN on fallback DC ad.crouseco.com:389
             var (ok3, err3, p3) = TryBind(_ldapFallback, 389, $"{username}@{_domain}", password, false, "UPN/389/ad.crouseco.com");
-            if (ok3) return (true, string.Empty, p3);
+            if (ok3) return BuildPrincipal(username, password, p3!);
 
             // Strategy 4: UPN on ldap.crouseco.com:636 (LDAPS)
             var (ok4, err4, p4) = TryBind(_ldapServer, 636, $"{username}@{_domain}", password, true, "UPN/636-LDAPS/ldap.crouseco.com");
-            if (ok4) return (true, string.Empty, p4);
+            if (ok4) return BuildPrincipal(username, password, p4!);
 
             Console.WriteLine($"[LDAP] All strategies failed. Last error: {err4}");
-            return (false, "نام کاربری یا رمز عبور اشتباه است.", null);
+            return (false, "نام کاربری یا رمز عبور اشتباه است.", (ClaimsPrincipal?)null);
         });
+    }
+
+    /// <summary>
+    /// After bind succeeds, perform a second LDAP search to fetch the displayName attribute.
+    /// Falls back to the raw username if displayName is not found.
+    /// </summary>
+    private (bool, string, ClaimsPrincipal?) BuildPrincipal(string username, string password, ClaimsPrincipal tempPrincipal)
+    {
+        string displayName = username; // default fallback
+
+        try
+        {
+            using var searchLdap = new LDAP();
+            searchLdap.RuntimeLicense = RuntimeLicense;
+            searchLdap.ServerName = _ldapServer;
+            searchLdap.ServerPort = 389;
+            searchLdap.Timeout = 10;
+            searchLdap.DN = $"{username}@{_domain}";
+            searchLdap.Password = password;
+            searchLdap.Bind();
+
+            // Base DN derived from domain: Crouseco.com -> DC=Crouseco,DC=com
+            string baseDn = string.Join(",", _domain.Split('.').Select(p => $"DC={p}"));
+            string filter = $"(sAMAccountName={username})";
+
+            // OnSearchResult fires for each result entry — read the attribute via Attr()
+            string foundDisplayName = username;
+            searchLdap.OnSearchResult += (s, e) =>
+            {
+                // e contains the DN; attributes are read from ldap.Attr() after event fires
+                try
+                {
+                    string val = searchLdap.Attr("displayName");
+                    if (!string.IsNullOrWhiteSpace(val))
+                        foundDisplayName = val;
+                }
+                catch { /* attribute may not exist */ }
+            };
+
+            searchLdap.SearchScope = LDAPSearchScopes.ssWholeSubtree;
+            searchLdap.Search(filter);
+
+            displayName = foundDisplayName;
+            Console.WriteLine($"[LDAP] Retrieved displayName: '{displayName}' for user '{username}'");
+
+            searchLdap.Unbind();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[LDAP WARN] Could not fetch displayName: {ex.Message}. Falling back to username.");
+            displayName = username;
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, username),
+            new Claim(ClaimTypes.Name, displayName),        // Real full name from AD
+            new Claim("preferred_username", username),      // Raw AD login kept separately
+            new Claim(ClaimTypes.Email, $"{username}@{_domain}")
+        };
+
+        var identity = new ClaimsIdentity(claims, "Cookies");
+        var principal = new ClaimsPrincipal(identity);
+        return (true, string.Empty, principal);
     }
 
     private (bool, string, ClaimsPrincipal?) TryBind(string server, int port, string dn, string password, bool useSSL, string label)
@@ -68,22 +131,11 @@ public class ActiveDirectoryService
             ldap.Bind();
             Console.WriteLine($"[LDAP] SUCCESS with strategy [{label}]");
 
-            // Extract the plain username from DN
+            // Return a temporary principal — will be replaced by BuildPrincipal
             string plainUser = dn.Contains("@") ? dn.Split('@')[0] :
                                dn.Contains("\\") ? dn.Split('\\')[1] : dn;
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, plainUser),
-                new Claim(ClaimTypes.Name, plainUser),
-                new Claim(ClaimTypes.Email, $"{plainUser}@{_domain}")
-            };
-
-            var identity = new ClaimsIdentity(claims, "Cookies");
-            var principal = new ClaimsPrincipal(identity);
-
-            ldap.Unbind();
-            return (true, string.Empty, principal);
+            var claims = new List<Claim> { new Claim(ClaimTypes.Name, plainUser) };
+            return (true, string.Empty, new ClaimsPrincipal(new ClaimsIdentity(claims, "Cookies")));
         }
         catch (IPWorksAuthException ex)
         {

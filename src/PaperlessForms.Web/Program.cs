@@ -10,7 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ─── Aspose.Cells License ───────────────────────────────
 var licPath = builder.Configuration["Aspose:LicensePath"]
-              ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.NET.lic");
+              ?? Path.Combine(AppContext.BaseDirectory, "Aspose.Total.lic");
+// Also look beside the .exe/dll if not found in base directory
+if (!File.Exists(licPath))
+    licPath = Path.Combine(AppContext.BaseDirectory, "Aspose.Total.NET.lic");
 if (File.Exists(licPath))
 {
     try
@@ -86,6 +89,30 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
     await context.SignOutAsync("Cookies");
     return Results.Redirect("/login");
 });
+
+// ─── Profile Avatar API ──────────────────────────────────
+app.MapGet("/api/user/avatar", (HttpContext context) =>
+{
+    if (context.User?.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var username = context.User.Identity?.Name ?? string.Empty;
+
+    // Extract numeric personnel code: "he110749" → "110749"
+    var code = System.Text.RegularExpressions.Regex.Match(username, @"\d+").Value;
+
+    if (!string.IsNullOrEmpty(code))
+    {
+        var imagePath = $@"\\datap2\Crouse\Services-Support-P2\Personel\1-{code}.jpg";
+        if (File.Exists(imagePath))
+            return Results.File(File.ReadAllBytes(imagePath), "image/jpeg");
+    }
+
+    // Fallback: return a generic grey avatar SVG
+    const string avatarSvg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'><circle cx='32' cy='32' r='32' fill='#dde1e7'/><circle cx='32' cy='24' r='12' fill='#9aa5b4'/><ellipse cx='32' cy='58' rx='20' ry='14' fill='#9aa5b4'/></svg>""";
+    return Results.Content(avatarSvg, "image/svg+xml");
+}).RequireAuthorization();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -103,9 +103,17 @@
             <h2 class="step-title">📋 مرحله ۳: تکمیل جدول بازرسی</h2>
 
             <div class="inspector-info">
-                <div class="input-row-rtl">
-                    <label>نام بازرس:</label>
-                    <input type="text" class="form-control-rtl-sm" value="@_submission.InspectorName" readonly style="background-color: #f8f9fa;" />
+                <div class="inspector-profile">
+                    <img src="/api/user/avatar"
+                         alt="عکس بازرس"
+                         class="inspector-avatar"
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><circle cx=%2232%22 cy=%2232%22 r=%2232%22 fill=%22%23dde1e7%22/><circle cx=%2232%22 cy=%2224%22 r=%2212%22 fill=%22%239aa5b4%22/><ellipse cx=%2232%22 cy=%2258%22 rx=%2220%22 ry=%2214%22 fill=%22%239aa5b4%22/></svg>'" />
+                    <div class="inspector-details">
+                        <div class="input-row-rtl">
+                            <label>نام بازرس:</label>
+                            <input type="text" class="form-control-rtl-sm" value="@_submission.InspectorName" readonly style="background-color: #f8f9fa;" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
