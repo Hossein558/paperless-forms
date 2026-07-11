@@ -29,7 +29,10 @@ var dataFolder = builder.Configuration["Data:FolderPath"]
 
 // Fallback برای محیط توسعه
 if (!Directory.Exists(dataFolder))
-    dataFolder = Path.Combine(AppContext.BaseDirectory, "Data");
+{
+    Console.WriteLine($"Network path '{dataFolder}' is unreachable. Falling back to local Data folder.");
+    dataFolder = Path.Combine(builder.Environment.ContentRootPath, "Data");
+}
 Directory.CreateDirectory(dataFolder);
 
 var excelService = new ExcelDataService(dataFolder);
