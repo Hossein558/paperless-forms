@@ -1,0 +1,15 @@
+services:
+  paperless-forms:
+    image: paperless-forms:latest
+    container_name: paperless-forms
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    volumes:
+      - "/mnt/sharedhome/paperless forms:/app/Data"
+      # Update the host path on the left to point to the Linux mount for \\datap2\Crouse\Services-Support-P2\Personel
+      - "/mnt/sharedhome/Personel:/app/Avatars"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Data__FolderPath=/app/Data
+      - Avatar__FolderPath=/app/Avatars

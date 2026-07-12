@@ -211,8 +211,9 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
 
     private static void WriteSubmissionToRow(Worksheet sheet, int row, InspectionSubmission submission)
     {
+        var jsonOptions = new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         sheet.Cells[row, 0].PutValue(submission.Id.ToString());
-        sheet.Cells[row, 1].PutValue(JsonSerializer.Serialize(submission));
+        sheet.Cells[row, 1].PutValue(JsonSerializer.Serialize(submission, jsonOptions));
         sheet.Cells[row, 2].PutValue(submission.PartCode);
         sheet.Cells[row, 3].PutValue(submission.SubmittedAt.ToString("yyyy-MM-dd HH:mm"));
         sheet.Cells[row, 4].PutValue(submission.InspectorName);

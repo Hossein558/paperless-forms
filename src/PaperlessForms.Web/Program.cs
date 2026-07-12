@@ -100,7 +100,8 @@ app.MapGet("/api/user/avatar", (HttpContext context) =>
 
     if (!string.IsNullOrEmpty(code))
     {
-        var imagePath = $@"\\datap2\Crouse\Services-Support-P2\Personel\1-{code}.jpg";
+        var avatarBaseFolder = builder.Configuration["Avatar:FolderPath"] ?? @"\\datap2\Crouse\Services-Support-P2\Personel";
+        var imagePath = Path.Combine(avatarBaseFolder, $"1-{code}.jpg");
         if (File.Exists(imagePath))
             return Results.File(File.ReadAllBytes(imagePath), "image/jpeg");
     }
