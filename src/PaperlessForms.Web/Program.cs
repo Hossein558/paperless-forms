@@ -5,6 +5,10 @@ using Aspose.Cells;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
+using ITfoxtec.Identity.Saml2;
+using ITfoxtec.Identity.Saml2.MvcCore;
+using ITfoxtec.Identity.Saml2.Schemas.Metadata;
+using ITfoxtec.Identity.Saml2.MvcCore.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +48,24 @@ builder.Services.AddSingleton<IInspectionRepository>(excelService);
 
 // ─── Razor Components / Blazor ──────────────────────────
 builder.Services.AddScoped<ActiveDirectoryService>();
+
+builder.Services.Configure<Saml2Configuration>(builder.Configuration.GetSection("Saml2"));
+builder.Services.Configure<Saml2Configuration>(saml2Configuration =>
+{
+    saml2Configuration.AllowedAudienceUris.Add(saml2Configuration.Issuer);
+    var entityDescriptor = new EntityDescriptor();
+#pragma warning disable CS0618 // Type or member is obsolete
+    entityDescriptor.ReadIdPSsoDescriptorFromUrl(new Uri(builder.Configuration["Saml2:IdPMetadata"]!));
+#pragma warning restore CS0618 // Type or member is obsolete
+    if (entityDescriptor.IdPSsoDescriptor != null)
+    {
+        saml2Configuration.SingleSignOnDestination = entityDescriptor.IdPSsoDescriptor.SingleSignOnServices.First().Location;
+        saml2Configuration.SignatureValidationCertificates.AddRange(entityDescriptor.IdPSsoDescriptor.SigningCertificates);
+    }
+});
+builder.Services.AddSaml2();
+
+builder.Services.AddControllers();
 
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
@@ -112,6 +134,7 @@ app.MapGet("/api/user/avatar", (HttpContext context) =>
 }).RequireAuthorization();
 
 app.MapStaticAssets();
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
