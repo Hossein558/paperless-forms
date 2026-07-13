@@ -116,15 +116,31 @@ app.MapGet("/api/user/avatar", (HttpContext context) =>
 
     var username = context.User.Identity?.Name ?? string.Empty;
 
-    // Extract numeric personnel code: "he110749" → "110749"
-    var code = System.Text.RegularExpressions.Regex.Match(username, @"\d+").Value;
+    // Extract the numeric part of the username (e.g., "he0024" -> "0024")
+    string personnelCodeStr = username.Length > 2 ? username.Substring(2) : username;
 
-    if (!string.IsNullOrEmpty(code))
+    // Parse to int to handle "1-24.ext" vs "1-0024.ext"
+    string personnelCodeIntStr = int.TryParse(personnelCodeStr, out int parsed) ? parsed.ToString() : personnelCodeStr;
+
+    // Build the expected file prefixes
+    string expectedPrefix1 = $"1-{personnelCodeStr}."; // e.g., "1-0024."
+    string expectedPrefix2 = $"1-{personnelCodeIntStr}."; // e.g., "1-24."
+
+    var avatarBaseFolder = builder.Configuration["Avatar:FolderPath"] ?? "/app/Avatars";
+    string actualFilePath = null;
+
+    if (Directory.Exists(avatarBaseFolder))
     {
-        var avatarBaseFolder = builder.Configuration["Avatar:FolderPath"] ?? @"\\datap2\Crouse\Services-Support-P2\Personel";
-        var imagePath = Path.Combine(avatarBaseFolder, $"1-{code}.jpg");
-        if (File.Exists(imagePath))
-            return Results.File(File.ReadAllBytes(imagePath), "image/jpeg");
+        // Search the directory ignoring case and matching either zero-padded or non-zero-padded names
+        actualFilePath = Directory.EnumerateFiles(avatarBaseFolder)
+            .FirstOrDefault(f => 
+                Path.GetFileName(f).StartsWith(expectedPrefix1, StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(f).StartsWith(expectedPrefix2, StringComparison.OrdinalIgnoreCase));
+    }
+
+    if (actualFilePath != null)
+    {
+        return Results.File(File.ReadAllBytes(actualFilePath), "image/jpeg");
     }
 
     // Fallback: return a generic grey avatar SVG
