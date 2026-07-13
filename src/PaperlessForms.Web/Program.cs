@@ -109,7 +109,7 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 });
 
 // ─── Profile Avatar API ──────────────────────────────────
-app.MapGet("/api/user/avatar", (HttpContext context) =>
+app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) =>
 {
     if (context.User?.Identity?.IsAuthenticated != true)
         return Results.Unauthorized();
@@ -118,31 +118,42 @@ app.MapGet("/api/user/avatar", (HttpContext context) =>
 
     // Extract the numeric part of the username (e.g., "he0024" -> "0024")
     string personnelCodeStr = username.Length > 2 ? username.Substring(2) : username;
-
-    // Parse to int to handle "1-24.ext" vs "1-0024.ext"
     string personnelCodeIntStr = int.TryParse(personnelCodeStr, out int parsed) ? parsed.ToString() : personnelCodeStr;
 
-    // Build the expected file prefixes
-    string expectedPrefix1 = $"1-{personnelCodeStr}."; // e.g., "1-0024."
-    string expectedPrefix2 = $"1-{personnelCodeIntStr}."; // e.g., "1-24."
+    var avatarBaseFolder = config["Avatar:FolderPath"] ?? "/app/Avatars";
+    
+    // Array of possible base names
+    string[] possibleNames = { 
+        $"1-{personnelCodeStr}", 
+        $"1-{personnelCodeIntStr}" 
+    };
+    
+    // Array of explicit case-sensitive extensions to check
+    string[] possibleExtensions = { ".jpg", ".JPG", ".png", ".PNG", ".jpeg", ".JPEG" };
 
-    var avatarBaseFolder = builder.Configuration["Avatar:FolderPath"] ?? "/app/Avatars";
     string actualFilePath = null;
 
-    if (Directory.Exists(avatarBaseFolder))
+    // Direct explicit checks are O(1) STAT calls over CIFS (Milliseconds instead of Minutes)
+    foreach (var name in possibleNames)
     {
-        // Search the directory ignoring case and matching either zero-padded or non-zero-padded names
-        actualFilePath = Directory.EnumerateFiles(avatarBaseFolder)
-            .FirstOrDefault(f => 
-                Path.GetFileName(f).StartsWith(expectedPrefix1, StringComparison.OrdinalIgnoreCase) ||
-                Path.GetFileName(f).StartsWith(expectedPrefix2, StringComparison.OrdinalIgnoreCase));
+        foreach (var ext in possibleExtensions)
+        {
+            string testPath = Path.Combine(avatarBaseFolder, name + ext);
+            if (File.Exists(testPath))
+            {
+                actualFilePath = testPath;
+                break; // Found it!
+            }
+        }
+        if (actualFilePath != null) break;
     }
 
     if (actualFilePath != null)
     {
-        return Results.File(File.ReadAllBytes(actualFilePath), "image/jpeg");
+        string contentType = actualFilePath.EndsWith("png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+        return Results.File(actualFilePath, contentType);
     }
-
+    
     // Fallback: return a generic grey avatar SVG
     const string avatarSvg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'><circle cx='32' cy='32' r='32' fill='#dde1e7'/><circle cx='32' cy='24' r='12' fill='#9aa5b4'/><ellipse cx='32' cy='58' rx='20' ry='14' fill='#9aa5b4'/></svg>""";
     return Results.Content(avatarSvg, "image/svg+xml");
