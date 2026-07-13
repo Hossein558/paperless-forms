@@ -18,12 +18,11 @@
 
             <form method="post" action="/api/auth/login" dir="rtl">
                 <AntiforgeryToken />
-                <!-- Using a simple form post to our Minimal API endpoint for Cookie Auth -->
                 <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
                 
                 <div class="mb-3" style="text-align: right;">
-                    <label class="form-label fw-bold">نام کاربری (Active Directory)</label>
-                    <input type="text" name="Username" class="form-control" dir="ltr" required placeholder="مثال: h.ebrahimi" />
+                    <label class="form-label fw-bold">نام کاربری</label>
+                    <input type="text" name="Username" class="form-control" dir="ltr" required placeholder="مثال: he110749" />
                 </div>
                 
                 <div class="mb-4" style="text-align: right;">
@@ -31,20 +30,10 @@
                     <input type="password" name="Password" class="form-control" dir="ltr" required />
                 </div>
                 
-                <div class="mb-4">
-                    <a href="/Auth/Login?ReturnUrl=@Uri.EscapeDataString(ReturnUrl ?? "/")" class="btn btn-lg w-100 fw-bold" style="background-color: #0052cc; color: #ffffff; border: none; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-users"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        ورود با سیستم متمرکز (Crowd SSO)
-                    </a>
-                </div>
-
-                <div class="d-flex align-items-center mb-4">
-                    <hr class="flex-grow-1">
-                    <span class="mx-3 text-muted">یا ورود محلی</span>
-                    <hr class="flex-grow-1">
-                </div>
-                
-                <button type="submit" class="btn btn-lg w-100 fw-bold" style="background-color: #6c757d; color: #ffffff; border: none; padding: 12px;">ورود با دایرکتوری محلی</button>
+                <button type="submit" class="btn btn-lg w-100 fw-bold" style="background-color: #0052cc; color: #ffffff; border: none; padding: 12px;">
+                    ورود به سیستم
+                </button>
+                <p class="text-center text-muted mt-3" style="font-size: 0.8rem;">احراز هویت از طریق Crowd یا Active Directory</p>
             </form>
         </div>
     </div>
@@ -57,3 +46,4 @@
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 }
+

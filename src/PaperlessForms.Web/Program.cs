@@ -5,10 +5,6 @@ using Aspose.Cells;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
-using ITfoxtec.Identity.Saml2;
-using ITfoxtec.Identity.Saml2.MvcCore;
-using ITfoxtec.Identity.Saml2.Schemas.Metadata;
-using ITfoxtec.Identity.Saml2.MvcCore.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,21 +45,12 @@ builder.Services.AddSingleton<IInspectionRepository>(excelService);
 // ─── Razor Components / Blazor ──────────────────────────
 builder.Services.AddScoped<ActiveDirectoryService>();
 
-builder.Services.Configure<Saml2Configuration>(builder.Configuration.GetSection("Saml2"));
-builder.Services.Configure<Saml2Configuration>(saml2Configuration =>
+// ─── Crowd REST Auth ────────────────────────────────────
+builder.Services.AddHttpClient("crowd", client =>
 {
-    saml2Configuration.AllowedAudienceUris.Add(saml2Configuration.Issuer);
-    var entityDescriptor = new EntityDescriptor();
-#pragma warning disable CS0618 // Type or member is obsolete
-    entityDescriptor.ReadIdPSsoDescriptorFromUrl(new Uri(builder.Configuration["Saml2:IdPMetadata"]!));
-#pragma warning restore CS0618 // Type or member is obsolete
-    if (entityDescriptor.IdPSsoDescriptor != null)
-    {
-        saml2Configuration.SingleSignOnDestination = entityDescriptor.IdPSsoDescriptor.SingleSignOnServices.First().Location;
-        saml2Configuration.SignatureValidationCertificates.AddRange(entityDescriptor.IdPSsoDescriptor.SigningCertificates);
-    }
+    client.Timeout = TimeSpan.FromSeconds(15);
 });
-builder.Services.AddSaml2();
+builder.Services.AddScoped<CrowdAuthService>();
 
 builder.Services.AddControllers();
 
@@ -92,9 +79,18 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapPost("/api/auth/login", async (HttpContext context, [FromForm] string Username, [FromForm] string Password, [FromForm] string? ReturnUrl, ActiveDirectoryService adService) =>
+app.MapPost("/api/auth/login", async (HttpContext context, [FromForm] string Username, [FromForm] string Password, [FromForm] string? ReturnUrl, CrowdAuthService crowdService, ActiveDirectoryService adService) =>
 {
-    var result = await adService.AuthenticateAsync(Username, Password);
+    // Strategy 1: Crowd REST API (primary)
+    var result = await crowdService.AuthenticateAsync(Username, Password);
+
+    // Strategy 2: LDAP / Active Directory fallback
+    if (!result.IsSuccess)
+    {
+        Console.WriteLine($"[Auth] Crowd failed for '{Username}', trying LDAP fallback.");
+        result = await adService.AuthenticateAsync(Username, Password);
+    }
+
     if (result.IsSuccess)
     {
         await context.SignInAsync("Cookies", result.Principal!);
