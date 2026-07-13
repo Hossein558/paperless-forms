@@ -96,15 +96,15 @@ app.MapPost("/api/auth/login", async (HttpContext context, [FromForm] string Use
     if (result.IsSuccess)
     {
         await context.SignInAsync("Cookies", result.Principal!);
-        return Results.Redirect(string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl);
+        return Results.LocalRedirect(string.IsNullOrEmpty(ReturnUrl) || ReturnUrl == "/" ? "~/" : ReturnUrl);
     }
-    return Results.Redirect($"/login?ErrorMessage={Uri.EscapeDataString(result.ErrorMessage)}&ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
+    return Results.LocalRedirect($"~/login?ErrorMessage={Uri.EscapeDataString(result.ErrorMessage)}&ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "~/")}");
 });
 
 app.MapPost("/api/auth/logout", async (HttpContext context) =>
 {
     await context.SignOutAsync("Cookies");
-    return Results.Redirect("/login");
+    return Results.LocalRedirect("~/login");
 });
 
 // ─── Profile Avatar API ──────────────────────────────────
