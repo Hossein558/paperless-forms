@@ -3,7 +3,7 @@ services:
     image: paperless-forms:latest
     container_name: paperless-forms
     ports:
-      - "8080:8080"
+      - "8081:8080"
     restart: unless-stopped
     volumes:
       - "/mnt/sharedhome/paperless forms:/app/Data"
