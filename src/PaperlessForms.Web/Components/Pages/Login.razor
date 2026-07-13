@@ -18,8 +18,6 @@
 
             <form method="post" action="api/auth/login" dir="rtl">
                 <AntiforgeryToken />
-                <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-                
                 <div class="mb-3" style="text-align: right;">
                     <label class="form-label fw-bold">نام کاربری</label>
                     <input type="text" name="Username" class="form-control" dir="ltr" required placeholder="مثال: he110749" />
@@ -42,8 +40,5 @@
 @code {
     [SupplyParameterFromQuery]
     public string? ErrorMessage { get; set; }
-
-    [SupplyParameterFromQuery]
-    public string? ReturnUrl { get; set; }
 }
 

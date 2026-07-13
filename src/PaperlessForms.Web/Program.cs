@@ -96,15 +96,16 @@ app.MapPost("/api/auth/login", async (HttpContext context, [FromForm] string Use
     if (result.IsSuccess)
     {
         await context.SignInAsync("Cookies", result.Principal!);
-        return Results.LocalRedirect(string.IsNullOrEmpty(ReturnUrl) || ReturnUrl == "/" ? "~/" : ReturnUrl);
+        // Ignore relative ReturnUrls, force redirect to dashboard
+        return Results.Redirect("/paperless/");
     }
-    return Results.LocalRedirect($"~/login?ErrorMessage={Uri.EscapeDataString(result.ErrorMessage)}&ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "~/")}");
+    return Results.Redirect($"/paperless/login?ErrorMessage={Uri.EscapeDataString(result.ErrorMessage)}");
 });
 
 app.MapPost("/api/auth/logout", async (HttpContext context) =>
 {
     await context.SignOutAsync("Cookies");
-    return Results.LocalRedirect("~/login");
+    return Results.Redirect("/paperless/login");
 });
 
 // ─── Profile Avatar API ──────────────────────────────────
