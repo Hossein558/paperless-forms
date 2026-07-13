@@ -68,6 +68,8 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
+app.UsePathBase("/paperless");
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
