@@ -114,10 +114,18 @@ app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) =>
     if (context.User?.Identity?.IsAuthenticated != true)
         return Results.Unauthorized();
 
-    var username = context.User.Identity?.Name ?? string.Empty;
+    var usernameClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                        ?? context.User.Identity?.Name 
+                        ?? string.Empty;
 
-    // Extract the numeric part of the username (e.g., "he0024" -> "0024")
-    string personnelCodeStr = username.Length > 2 ? username.Substring(2) : username;
+    // Clean up domains like CROUSECO\he110749
+    if (usernameClaim.Contains("\\")) usernameClaim = usernameClaim.Split('\\').Last();
+    if (usernameClaim.Contains("@")) usernameClaim = usernameClaim.Split('@').First();
+
+    // Extract personnel code safely
+    string personnelCodeStr = usernameClaim.StartsWith("he", StringComparison.OrdinalIgnoreCase) && usernameClaim.Length > 2
+        ? usernameClaim.Substring(2) 
+        : usernameClaim;
     string personnelCodeIntStr = int.TryParse(personnelCodeStr, out int parsed) ? parsed.ToString() : personnelCodeStr;
 
     var avatarBaseFolder = config["Avatar:FolderPath"] ?? "/app/Avatars";
