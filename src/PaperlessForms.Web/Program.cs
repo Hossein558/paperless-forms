@@ -5,6 +5,8 @@ using Aspose.Cells;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +68,12 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+var keysFolder = builder.Configuration["DataProtection:KeysFolder"] ?? "/app/Keys";
+Directory.CreateDirectory(keysFolder); // Ensure the path exists inside the container
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
+    .SetApplicationName("PaperlessFormsApp");
+
 var app = builder.Build();
 
 app.UsePathBase("/paperless");
@@ -109,48 +117,49 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 });
 
 // ─── Profile Avatar API ──────────────────────────────────
-app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) =>
+app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) => 
 {
-    if (context.User?.Identity?.IsAuthenticated != true)
-        return Results.Unauthorized();
+    Console.WriteLine("Avatar API hit. Checking user authentication...");
+    var user = context.User;
+    if (user?.Identity == null || !user.Identity.IsAuthenticated) 
+    {
+        Console.WriteLine("User is not authenticated. Returning NotFound.");
+        return Results.NotFound();
+    }
 
-    var usernameClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
-                        ?? context.User.Identity?.Name 
-                        ?? string.Empty;
+    var usernameClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                        ?? user.Identity.Name ?? string.Empty;
+    Console.WriteLine($"Raw username claim extracted: '{usernameClaim}'");
 
-    // Clean up domains like CROUSECO\he110749
     if (usernameClaim.Contains("\\")) usernameClaim = usernameClaim.Split('\\').Last();
     if (usernameClaim.Contains("@")) usernameClaim = usernameClaim.Split('@').First();
+    
+    Console.WriteLine($"Sanitized username: '{usernameClaim}'");
 
-    // Extract personnel code safely
     string personnelCodeStr = usernameClaim.StartsWith("he", StringComparison.OrdinalIgnoreCase) && usernameClaim.Length > 2
         ? usernameClaim.Substring(2) 
         : usernameClaim;
+    
     string personnelCodeIntStr = int.TryParse(personnelCodeStr, out int parsed) ? parsed.ToString() : personnelCodeStr;
+    Console.WriteLine($"Calculated Personnel Codes -> Str: '{personnelCodeStr}', Int: '{personnelCodeIntStr}'");
 
     var avatarBaseFolder = config["Avatar:FolderPath"] ?? "/app/Avatars";
-    
-    // Array of possible base names
-    string[] possibleNames = { 
-        $"1-{personnelCodeStr}", 
-        $"1-{personnelCodeIntStr}" 
-    };
-    
-    // Array of explicit case-sensitive extensions to check
+    string[] possibleNames = { $"1-{personnelCodeStr}", $"1-{personnelCodeIntStr}" };
     string[] possibleExtensions = { ".jpg", ".JPG", ".png", ".PNG", ".jpeg", ".JPEG" };
 
     string actualFilePath = null;
-
-    // Direct explicit checks are O(1) STAT calls over CIFS (Milliseconds instead of Minutes)
     foreach (var name in possibleNames)
     {
         foreach (var ext in possibleExtensions)
         {
             string testPath = Path.Combine(avatarBaseFolder, name + ext);
+            Console.WriteLine($"Checking physical existence of: '{testPath}'");
+            
             if (File.Exists(testPath))
             {
+                Console.WriteLine($"SUCCESS: File found at '{testPath}'!");
                 actualFilePath = testPath;
-                break; // Found it!
+                break;
             }
         }
         if (actualFilePath != null) break;
@@ -159,8 +168,11 @@ app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) =>
     if (actualFilePath != null)
     {
         string contentType = actualFilePath.EndsWith("png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+        Console.WriteLine($"Returning file with Content-Type: {contentType}");
         return Results.File(actualFilePath, contentType);
     }
+    
+    Console.WriteLine("All file checks failed. Returning fallback SVG/NotFound.");
     
     // Fallback: return a generic grey avatar SVG
     const string avatarSvg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'><circle cx='32' cy='32' r='32' fill='#dde1e7'/><circle cx='32' cy='24' r='12' fill='#9aa5b4'/><ellipse cx='32' cy='58' rx='20' ry='14' fill='#9aa5b4'/></svg>""";
