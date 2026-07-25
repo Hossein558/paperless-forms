@@ -55,18 +55,24 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
         {
             var workbook = new Workbook(_masterDataPath);
             var sheet = workbook.Worksheets[SheetParts];
-            int row = 1;
+            int maxRow = sheet.Cells.MaxDataRow;
+            
+            Console.WriteLine($"[Diagnostic] GetPartByCodeAsync called for: '{partCode}'. MaxDataRow: {maxRow}");
 
-            while (!string.IsNullOrWhiteSpace(sheet.Cells[row, 0].StringValue))
+            for (int row = 1; row <= maxRow; row++)
             {
-                if (sheet.Cells[row, 0].StringValue.Trim().Equals(partCode.Trim(), StringComparison.OrdinalIgnoreCase))
+                var cellValue = sheet.Cells[row, 0].StringValue;
+                if (string.IsNullOrWhiteSpace(cellValue)) continue;
+
+                if (cellValue.Trim().Equals(partCode.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     var part = MapRowToPart(sheet, row);
                     part.Parameters = GetParametersForPart(partCode);
                     return part;
                 }
-                row++;
             }
+            
+            Console.WriteLine($"[Diagnostic] PartCode '{partCode}' NOT FOUND in Parts sheet.");
             return (Part?)null;
         });
     }
@@ -86,26 +92,35 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
         var parameters = new List<InspectionParameter>();
         var workbook = new Workbook(_masterDataPath);
         var sheet = workbook.Worksheets[SheetParameters];
-        int row = 1;
+        int maxRow = sheet.Cells.MaxDataRow;
 
-        while (!string.IsNullOrWhiteSpace(sheet.Cells[row, 0].StringValue))
+        Console.WriteLine($"[Diagnostic] GetParametersForPart called for partCode: '{partCode}'");
+        Console.WriteLine($"[Diagnostic] MaxDataRow in Parameters sheet: {maxRow}");
+
+        for (int row = 1; row <= maxRow; row++)
         {
-            if (sheet.Cells[row, 0].StringValue.Trim().Equals(partCode.Trim(), StringComparison.OrdinalIgnoreCase))
+            var cellValue = sheet.Cells[row, 0].StringValue;
+            if (string.IsNullOrWhiteSpace(cellValue)) continue;
+
+            // Console.WriteLine($"[Diagnostic] Row {row} PartCode: '{cellValue}'"); // Uncomment if needed, but might be noisy
+
+            if (cellValue.Trim().Equals(partCode.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 parameters.Add(new InspectionParameter
                 {
                     RowNumber = (int)(sheet.Cells[row, 1].DoubleValue),
-                    ParameterName = sheet.Cells[row, 2].StringValue.Trim(),
-                    ParameterType = sheet.Cells[row, 3].StringValue.Trim(),
-                    AcceptanceCriteria = sheet.Cells[row, 4].StringValue.Trim(),
-                    ControlMethod = sheet.Cells[row, 5].StringValue.Trim(),
+                    ParameterName = sheet.Cells[row, 2].StringValue?.Trim(),
+                    ParameterType = sheet.Cells[row, 3].StringValue?.Trim(),
+                    AcceptanceCriteria = sheet.Cells[row, 4].StringValue?.Trim(),
+                    ControlMethod = sheet.Cells[row, 5].StringValue?.Trim(),
                     MinValue = string.IsNullOrWhiteSpace(sheet.Cells[row, 6].StringValue) ? null : sheet.Cells[row, 6].DoubleValue,
                     MaxValue = string.IsNullOrWhiteSpace(sheet.Cells[row, 7].StringValue) ? null : sheet.Cells[row, 7].DoubleValue,
-                    Unit = sheet.Cells[row, 8].StringValue.Trim(),
+                    Unit = sheet.Cells[row, 8].StringValue?.Trim(),
                 });
             }
-            row++;
         }
+        
+        Console.WriteLine($"[Diagnostic] Found {parameters.Count} parameters for '{partCode}'");
         return parameters;
     }
 
