@@ -117,7 +117,7 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 });
 
 // ─── Profile Avatar API ──────────────────────────────────
-app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) => 
+var avatarHandler = (HttpContext context, IConfiguration config) => 
 {
     Console.WriteLine("Avatar API hit. Checking user authentication...");
     var user = context.User;
@@ -177,7 +177,10 @@ app.MapGet("/api/avatar", (HttpContext context, IConfiguration config) =>
     // Fallback: return a generic grey avatar SVG
     const string avatarSvg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'><circle cx='32' cy='32' r='32' fill='#dde1e7'/><circle cx='32' cy='24' r='12' fill='#9aa5b4'/><ellipse cx='32' cy='58' rx='20' ry='14' fill='#9aa5b4'/></svg>""";
     return Results.Content(avatarSvg, "image/svg+xml");
-}).RequireAuthorization();
+};
+
+app.MapGet("/api/avatar", avatarHandler).RequireAuthorization();
+app.MapGet("/api/user/avatar", avatarHandler).RequireAuthorization();
 
 app.MapStaticAssets();
 app.MapControllers();
