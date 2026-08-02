@@ -87,6 +87,23 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
         ControlProgramNumber = sheet.Cells[row, 5].StringValue.Trim(),
     };
 
+    private double? ParseDoubleSafe(Aspose.Cells.Cell cell)
+    {
+        var str = cell.StringValue?.Trim();
+        if (string.IsNullOrWhiteSpace(str) || str == "-") return null;
+        if (double.TryParse(str, out double val)) return val;
+        return null;
+    }
+
+    private int ParseIntSafe(Aspose.Cells.Cell cell)
+    {
+        var str = cell.StringValue?.Trim();
+        if (string.IsNullOrWhiteSpace(str)) return 0;
+        if (int.TryParse(str, out int val)) return val;
+        if (double.TryParse(str, out double dVal)) return (int)dVal;
+        return 0;
+    }
+
     private List<InspectionParameter> GetParametersForPart(string partCode)
     {
         var parameters = new List<InspectionParameter>();
@@ -108,13 +125,13 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
             {
                 parameters.Add(new InspectionParameter
                 {
-                    RowNumber = (int)(sheet.Cells[row, 1].DoubleValue),
+                    RowNumber = ParseIntSafe(sheet.Cells[row, 1]),
                     ParameterName = sheet.Cells[row, 2].StringValue?.Trim(),
                     ParameterType = sheet.Cells[row, 3].StringValue?.Trim(),
                     AcceptanceCriteria = sheet.Cells[row, 4].StringValue?.Trim(),
                     ControlMethod = sheet.Cells[row, 5].StringValue?.Trim(),
-                    MinValue = string.IsNullOrWhiteSpace(sheet.Cells[row, 6].StringValue) ? null : sheet.Cells[row, 6].DoubleValue,
-                    MaxValue = string.IsNullOrWhiteSpace(sheet.Cells[row, 7].StringValue) ? null : sheet.Cells[row, 7].DoubleValue,
+                    MinValue = ParseDoubleSafe(sheet.Cells[row, 6]),
+                    MaxValue = ParseDoubleSafe(sheet.Cells[row, 7]),
                     Unit = sheet.Cells[row, 8].StringValue?.Trim(),
                 });
             }
