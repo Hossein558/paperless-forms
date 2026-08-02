@@ -136,15 +136,32 @@ var avatarHandler = (HttpContext context, IConfiguration config) =>
     
     Console.WriteLine($"Sanitized username: '{usernameClaim}'");
 
-    string personnelCodeStr = usernameClaim.StartsWith("he", StringComparison.OrdinalIgnoreCase) && usernameClaim.Length > 2
-        ? usernameClaim.Substring(2) 
-        : usernameClaim;
-    
-    string personnelCodeIntStr = int.TryParse(personnelCodeStr, out int parsed) ? parsed.ToString() : personnelCodeStr;
-    Console.WriteLine($"Calculated Personnel Codes -> Str: '{personnelCodeStr}', Int: '{personnelCodeIntStr}'");
-
     var avatarBaseFolder = config["Avatar:FolderPath"] ?? "/app/Avatars";
-    string[] possibleNames = { $"1-{personnelCodeStr}", $"1-{personnelCodeIntStr}" };
+    var rawClean = usernameClaim.Trim();
+
+    string digitsOnly = System.Text.RegularExpressions.Regex.Replace(rawClean, @"[^\d]", "");
+    string intStr = int.TryParse(digitsOnly, out int parsedInt) ? parsedInt.ToString() : digitsOnly;
+    string paddedStr = parsedInt > 0 ? parsedInt.ToString("D4") : digitsOnly;
+
+    var possibleNames = new List<string>();
+    if (!string.IsNullOrEmpty(digitsOnly))
+    {
+        possibleNames.Add($"1-{digitsOnly}");
+        possibleNames.Add($"1-{intStr}");
+        possibleNames.Add($"1-{paddedStr}");
+        possibleNames.Add(digitsOnly);
+    }
+    possibleNames.Add($"1-{rawClean}");
+    possibleNames.Add(rawClean);
+
+    if (rawClean.Length > 2 && char.IsLetter(rawClean[0]) && char.IsLetter(rawClean[1]))
+    {
+        string stripped = rawClean.Substring(2);
+        possibleNames.Add($"1-{stripped}");
+        possibleNames.Add(stripped);
+    }
+
+    Console.WriteLine($"Calculated Candidate Avatar Names -> {string.Join(", ", possibleNames)}");
     string[] possibleExtensions = { ".jpg", ".JPG", ".png", ".PNG", ".jpeg", ".JPEG" };
 
     string actualFilePath = null;

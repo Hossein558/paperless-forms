@@ -19,6 +19,10 @@
         <article class="content px-4">
             @Body
         </article>
+
+        <footer class="app-footer">
+            <span>Atlassian Paperless Forms Software (v1.0.0#sha1:crouse:@_nodeId) · <a href="/paperless/">About</a></span>
+        </footer>
     </main>
 </div>
 
@@ -27,3 +31,21 @@
     <a href="." class="reload">بارگذاری مجدد</a>
     <button class="dismiss">✕</button>
 </div>
+
+@code {
+    private string _nodeId = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var envNode = Environment.GetEnvironmentVariable("NODE_ID");
+        if (!string.IsNullOrEmpty(envNode))
+        {
+            _nodeId = envNode;
+        }
+        else
+        {
+            var host = System.Net.Dns.GetHostName();
+            _nodeId = host.Contains("42") || host.Contains("node1") ? "node1" : (host.Contains("43") || host.Contains("node2") ? "node2" : host);
+        }
+    }
+}
