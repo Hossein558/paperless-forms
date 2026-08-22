@@ -142,8 +142,21 @@
                             <tr class="@GetRowClass(row)">
                                 <td class="col-row-num">@row.RowNumber</td>
                                 <td class="col-param">@row.ParameterName</td>
-                                <td class="col-criteria" title="@row.ControlItem">
-                                    <span class="criteria-short">@TruncateText(row.ControlItem, 40)</span>
+                                <td class="col-criteria" @onclick="() => ToggleCriteria(row.RowNumber)">
+                                    <div class="criteria-wrapper @(_expandedCriteriaRows.Contains(row.RowNumber) ? "expanded" : "collapsed")">
+                                        <span class="criteria-text" title="@row.ControlItem">
+                                            @(_expandedCriteriaRows.Contains(row.RowNumber) ? row.ControlItem : TruncateText(row.ControlItem, 40))
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(row.ControlItem) && row.ControlItem.Length > 40)
+                                        {
+                                            <button type="button"
+                                                    class="btn-toggle-more"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => ToggleCriteria(row.RowNumber)">
+                                                @(_expandedCriteriaRows.Contains(row.RowNumber) ? "بستن ▴" : "بیشتر... ▾")
+                                            </button>
+                                        }
+                                    </div>
                                 </td>
                                 <td class="col-method">@row.ControlMethod</td>
                                 <td class="col-min">@row.MinValue?.ToString("G4")</td>
@@ -366,4 +379,14 @@
 
     private static string TruncateText(string text, int maxLen)
         => text.Length <= maxLen ? text : text[..maxLen] + "...";
+
+    private readonly HashSet<int> _expandedCriteriaRows = new();
+
+    private void ToggleCriteria(int rowNumber)
+    {
+        if (_expandedCriteriaRows.Contains(rowNumber))
+            _expandedCriteriaRows.Remove(rowNumber);
+        else
+            _expandedCriteriaRows.Add(rowNumber);
+    }
 }
