@@ -19,7 +19,7 @@
             <span class="header-icon">📊</span>
             <div>
                 <h2>گزارش‌گیری تفکیکی و تحلیلی بازرسی</h2>
-                <p class="text-muted">مبتنی بر گرید پیشرفته Syncfusion با قابلیت مرتب‌سازی، فیلتر ستونی، تاریخ شمسی و خروجی اکسل</p>
+                <p class="text-muted">مشاهده، فیلتر و خروجی جامع داده‌های بازرسی با تفکیک کامل اندازه‌گیری‌ها و نمونه‌ها</p>
             </div>
         </div>
         <div class="header-actions">
@@ -169,7 +169,7 @@
         {
             <div class="loading-box">
                 <div class="spinner"></div>
-                <p>در حال واکشی و تفکیک داده‌ها در گرید Syncfusion...</p>
+                <p>در حال واکشی و تفکیک اطلاعات بازرسی...</p>
             </div>
         }
         else if (_records.Count == 0)
@@ -192,7 +192,7 @@
                         EnableRtl="true"
                         CssClass="custom-sf-grid">
                     <GridPageSettings PageSize="15" PageSizes="@(new int[] { 10, 15, 25, 50, 100 })" />
-                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu" />
                     <GridTextWrapSettings WrapMode="WrapMode.Content" />
                     <GridColumns>
                         <GridColumn Field="@nameof(DecomposedInspectionRecord.RowNumber)" HeaderText="ردیف" Width="70" TextAlign="TextAlign.Center" />
