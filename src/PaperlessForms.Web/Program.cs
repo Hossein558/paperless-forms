@@ -2,11 +2,15 @@ using PaperlessForms.Web.Components;
 using PaperlessForms.Core.Services;
 using PaperlessForms.Core.Interfaces;
 using Aspose.Cells;
+using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
+
+// ─── Syncfusion License ─────────────────────────────────
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("32392e302e303b32393bKq35AiUSRDJT5uIaFzRCrJWDo7gKUKH1Rwb6jH+WX4o=");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +72,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddSyncfusionBlazor();
+
 var keysFolder = builder.Configuration["DataProtection:KeysFolder"] ?? "/app/Keys";
 Directory.CreateDirectory(keysFolder); // Ensure the path exists inside the container
 builder.Services.AddDataProtection()
@@ -75,6 +81,13 @@ builder.Services.AddDataProtection()
     .SetApplicationName("PaperlessFormsApp");
 
 var app = builder.Build();
+
+var supportedCultures = new[] { "fa-IR" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+app.UseRequestLocalization(localizationOptions);
 
 app.UsePathBase("/paperless");
 

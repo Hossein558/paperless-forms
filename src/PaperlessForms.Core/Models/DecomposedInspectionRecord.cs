@@ -44,9 +44,54 @@ public class DecomposedInspectionRecord
     public bool? JobSetupOk { get; set; }
     public string JobSetupIssues { get; set; } = string.Empty;
     public bool IsValid { get; set; }
-
     public string ResultStatus => IsValid ? "OK" : "NOK";
     public string ResultTitle => IsValid ? "منطبق" : "نامنطبق";
+
+    public string SubmittedAtShamsi
+    {
+        get
+        {
+            var pc = new System.Globalization.PersianCalendar();
+            return $"{pc.GetYear(SubmittedAt):D4}/{pc.GetMonth(SubmittedAt):D2}/{pc.GetDayOfMonth(SubmittedAt):D2} {SubmittedAt:HH:mm}";
+        }
+    }
+
+    public string SubmittedDateShamsi
+    {
+        get
+        {
+            var pc = new System.Globalization.PersianCalendar();
+            return $"{pc.GetYear(SubmittedAt):D4}/{pc.GetMonth(SubmittedAt):D2}/{pc.GetDayOfMonth(SubmittedAt):D2}";
+        }
+    }
+}
+
+public static class PersianDateHelper
+{
+    public static DateTime? ToGregorian(string? shamsiDate)
+    {
+        if (string.IsNullOrWhiteSpace(shamsiDate)) return null;
+        try
+        {
+            var parts = shamsiDate.Replace("-", "/").Trim().Split('/');
+            if (parts.Length == 3 &&
+                int.TryParse(parts[0], out int y) &&
+                int.TryParse(parts[1], out int m) &&
+                int.TryParse(parts[2], out int d))
+            {
+                var pc = new System.Globalization.PersianCalendar();
+                return pc.ToDateTime(y, m, d, 0, 0, 0, 0);
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    public static string ToShamsi(DateTime dt)
+    {
+        var pc = new System.Globalization.PersianCalendar();
+        return $"{pc.GetYear(dt):D4}/{pc.GetMonth(dt):D2}/{pc.GetDayOfMonth(dt):D2}";
+    }
 }
 
 /// <summary>

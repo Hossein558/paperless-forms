@@ -878,4 +878,76 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important;
     font-size: 3rem;
     display: block;
     margin-bottom: 0.5rem;
-}
+}
+
+/* ── Date Presets ────────────────────────── */
+.date-presets {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+}
+
+.presets-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.btn-preset {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-preset:hover {
+    background-color: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+}
+
+.grid-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* ── Syncfusion Grid Customizations ──────── */
+.syncfusion-grid-wrapper {
+    margin-top: 0.75rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.custom-sf-grid {
+    font-family: inherit !important;
+}
+
+.custom-sf-grid .e-gridheader th {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    padding: 10px 8px !important;
+    text-align: center !important;
+}
+
+.custom-sf-grid .e-rowcell {
+    font-size: 0.82rem !important;
+    padding: 8px !important;
+}
+
+.custom-sf-grid .e-row:hover .e-rowcell {
+    background-color: #f8fafc !important;
+}
+

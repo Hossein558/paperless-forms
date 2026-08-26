@@ -3,11 +3,14 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @using PaperlessForms.Core.Interfaces
 @using PaperlessForms.Core.Models
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.DropDowns
 @inject IInspectionRepository InspectionRepo
 @inject IPartRepository PartRepo
 @inject NavigationManager NavManager
 
-<PageTitle>گزارش‌گیری تفکیکی بازرسی - Paperless Forms</PageTitle>
+<PageTitle>گزارش‌گیری تفکیکی بازرسی (Syncfusion) - Paperless Forms</PageTitle>
 
 <div class="reports-page">
     <!-- ─── هدر بخش گزارش‌ها ─── -->
@@ -16,17 +19,17 @@
             <span class="header-icon">📊</span>
             <div>
                 <h2>گزارش‌گیری تفکیکی و تحلیلی بازرسی</h2>
-                <p class="text-muted">مشاهده، فیلتر و خروجی داده‌های بازرسی با تفکیک کامل مقادیر و نمونه‌ها</p>
+                <p class="text-muted">مبتنی بر گرید پیشرفته Syncfusion با قابلیت مرتب‌سازی، فیلتر ستونی، تاریخ شمسی و خروجی اکسل</p>
             </div>
         </div>
         <div class="header-actions">
             <a href="@GetExportUrl()" target="_blank" class="btn-export-excel">
-                <span class="icon">📥</span> دریافت خروجی اکسل (.xlsx)
+                <span class="icon">📥</span> دریافت خروجی اکسل تفکیکی (.xlsx)
             </a>
         </div>
     </div>
 
-    <!-- ─── نوار فیلترها ─── -->
+    <!-- ─── نوار فیلترها (شامل تاریخ‌های شمسی) ─── -->
     <div class="filter-card">
         <div class="filter-grid">
             <div class="filter-item">
@@ -43,7 +46,7 @@
                 <label>نام یا کد بازرس:</label>
                 <input type="text" 
                        class="form-control-rtl" 
-                       placeholder="جستجوی بازرس..." 
+                       placeholder="جستجوی نام بازرس..." 
                        @bind="_filter.InspectorName" 
                        @bind:event="oninput" 
                        @onkeydown="HandleKeyDown" />
@@ -53,7 +56,7 @@
                 <label>آیتم کنترلی / مشخصه:</label>
                 <input type="text" 
                        class="form-control-rtl" 
-                       placeholder="نام پارامتر..." 
+                       placeholder="مثال: ابعاد، وزن، ظاهر..." 
                        @bind="_filter.ParameterName" 
                        @bind:event="oninput" 
                        @onkeydown="HandleKeyDown" />
@@ -62,28 +65,46 @@
             <div class="filter-item">
                 <label>وضعیت انطباق:</label>
                 <select class="form-control-rtl" @bind="_validitySelection">
-                    <option value="all">همه نتایج</option>
-                    <option value="ok">فقط منطبق (OK)</option>
-                    <option value="nok">فقط نامنطبق (NOK)</option>
+                    <option value="all">همه نتایج (OK و NOK)</option>
+                    <option value="ok">فقط موارد منطبق (OK)</option>
+                    <option value="nok">فقط عدم‌انطباق‌ها (NOK)</option>
                 </select>
             </div>
 
             <div class="filter-item">
-                <label>از تاریخ:</label>
-                <input type="date" class="form-control-rtl" @bind="_filter.FromDate" />
+                <label>از تاریخ (شمسی):</label>
+                <input type="text" 
+                       class="form-control-rtl" 
+                       placeholder="مثال: 1405/01/01" 
+                       @bind="_shamsiFromDate" 
+                       @onkeydown="HandleKeyDown" />
             </div>
 
             <div class="filter-item">
-                <label>تا تاریخ:</label>
-                <input type="date" class="form-control-rtl" @bind="_filter.ToDate" />
+                <label>تا تاریخ (شمسی):</label>
+                <input type="text" 
+                       class="form-control-rtl" 
+                       placeholder="مثال: 1405/12/29" 
+                       @bind="_shamsiToDate" 
+                       @onkeydown="HandleKeyDown" />
             </div>
+        </div>
+
+        <!-- کلیدهای میانبر تاریخ شمسی -->
+        <div class="date-presets">
+            <span class="presets-label">انتخاب سریع بازه شمسی:</span>
+            <button type="button" class="btn-preset" @onclick="() => SetDatePreset(0)">امروز</button>
+            <button type="button" class="btn-preset" @onclick="() => SetDatePreset(7)">۷ روز گذشته</button>
+            <button type="button" class="btn-preset" @onclick="() => SetDatePreset(30)">۳۰ روز گذشته</button>
+            <button type="button" class="btn-preset" @onclick="() => SetDatePreset(90)">۳ ماه گذشته</button>
+            <button type="button" class="btn-preset" @onclick="ClearDatePreset">همه تاریخ‌ها</button>
         </div>
 
         <div class="filter-actions">
             <button class="btn-primary-rtl" @onclick="LoadReportAsync" disabled="@_isLoading">
                 @if (_isLoading)
                 {
-                    <span>در حال بارگذاری...</span>
+                    <span>در حال جستجو...</span>
                 }
                 else
                 {
@@ -91,7 +112,7 @@
                 }
             </button>
             <button class="btn-secondary-rtl" @onclick="ResetFiltersAsync" disabled="@_isLoading">
-                🔄 بازنشانی فیلترها
+                🔄 بازنشانی فرم
             </button>
         </div>
     </div>
@@ -139,11 +160,14 @@
         </div>
     </div>
 
-    <!-- ─── جدول داده‌های تفکیکی ─── -->
+    <!-- ─── گرید پیشرفته Syncfusion ─── -->
     <div class="report-table-container">
         <div class="table-toolbar">
             <span class="records-badge">
-                تعداد رکوردهای یافت‌شده: <strong>@_records.Count</strong> سطر
+                تعداد رکوردهای یافت‌شده در گرید: <strong>@_records.Count</strong> سطر تفکیک‌شده
+            </span>
+            <span class="grid-hint">
+                💡 با کلیک روی عناوین ستون‌ها می‌توانید مرتب‌سازی (Sort) یا فیلتر اختصاصی انجام دهید.
             </span>
         </div>
 
@@ -151,7 +175,7 @@
         {
             <div class="loading-box">
                 <div class="spinner"></div>
-                <p>در حال واکشی و تفکیک اطلاعات بازرسی...</p>
+                <p>در حال واکشی و تفکیک داده‌ها در گرید Syncfusion...</p>
             </div>
         }
         else if (_records.Count == 0)
@@ -159,70 +183,61 @@
             <div class="empty-state">
                 <span class="empty-icon">📭</span>
                 <h3>هیچ رکوردی یافت نشد</h3>
-                <p>با فیلترهای انتخاب‌شده داده‌ای برای نمایش وجود ندارد.</p>
+                <p>با فیلترهای مشخص‌شده داده‌ای در سیستم موجود نیست.</p>
             </div>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>ردیف</th>
-                            <th>تاریخ ثبت</th>
-                            <th>کد قطعه</th>
-                            <th>نام قطعه</th>
-                            <th>بازرس</th>
-                            <th>مشخصه کنترلی</th>
-                            <th>معیار پذیرش</th>
-                            <th>حد پایین</th>
-                            <th>حد بالا</th>
-                            <th>نم ۱</th>
-                            <th>نم ۲</th>
-                            <th>نم ۳</th>
-                            <th>نم ۴</th>
-                            <th>نم ۵</th>
-                            <th>کمینه</th>
-                            <th>بیشینه</th>
-                            <th>Job Setup</th>
-                            <th>نتیجه</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (int i = 0; i < _records.Count; i++)
-                        {
-                            var item = _records[i];
-                            <tr class="@(item.IsValid ? "" : "row-invalid")">
-                                <td class="col-num">@(i + 1)</td>
-                                <td class="col-date">@item.SubmittedAt.ToString("yyyy/MM/dd HH:mm")</td>
-                                <td class="col-part"><strong>@item.PartCode</strong></td>
-                                <td class="col-name" title="@item.PartName">@Truncate(item.PartName, 25)</td>
-                                <td class="col-inspector">@item.InspectorName</td>
-                                <td class="col-param">@item.ParameterName</td>
-                                <td class="col-crit" title="@item.AcceptanceCriteria">
-                                    <span>@Truncate(item.AcceptanceCriteria, 30)</span>
-                                </td>
-                                <td class="col-val">@item.MinValue?.ToString("G4")</td>
-                                <td class="col-val">@item.MaxValue?.ToString("G4")</td>
-                                <td class="col-sample">@FormatSample(item.Sample1)</td>
-                                <td class="col-sample">@FormatSample(item.Sample2)</td>
-                                <td class="col-sample">@FormatSample(item.Sample3)</td>
-                                <td class="col-sample">@FormatSample(item.Sample4)</td>
-                                <td class="col-sample">@FormatSample(item.Sample5)</td>
-                                <td class="col-minmax">@FormatSample(item.SampleMin)</td>
-                                <td class="col-minmax">@FormatSample(item.SampleMax)</td>
-                                <td class="col-jobsetup">
-                                    @(item.JobSetupOk.HasValue ? (item.JobSetupOk.Value ? "OK" : "NOK") : "-")
-                                </td>
-                                <td class="col-status">
-                                    <span class="badge @(item.IsValid ? "badge-ok" : "badge-nok")">
-                                        @item.ResultStatus
-                                    </span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="syncfusion-grid-wrapper">
+                <SfGrid DataSource="@_records"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        AllowResizing="true"
+                        AllowTextWrap="true"
+                        EnableRtl="true"
+                        CssClass="custom-sf-grid">
+                    <GridPageSettings PageSize="15" PageSizes="@(new int[] { 10, 15, 25, 50, 100 })" />
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                    <GridTextWrapSettings WrapMode="WrapMode.Content" />
+                    <GridColumns>
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.RowNumber)" HeaderText="ردیف" Width="70" TextAlign="TextAlign.Center" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.SubmittedAtShamsi)" HeaderText="تاریخ ثبت (شمسی)" Width="160" TextAlign="TextAlign.Center" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.PartCode)" HeaderText="کد قطعه" Width="130" TextAlign="TextAlign.Center" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.PartName)" HeaderText="نام قطعه" Width="180" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.InspectorName)" HeaderText="بازرس" Width="130" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.ParameterName)" HeaderText="مشخصه کنترلی" Width="160" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.AcceptanceCriteria)" HeaderText="معیار پذیرش" Width="200" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.ControlMethod)" HeaderText="روش کنترل" Width="120" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.MinValue)" HeaderText="حد پایین" Width="90" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.MaxValue)" HeaderText="حد بالا" Width="90" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.Sample1)" HeaderText="نمونه ۱" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.Sample2)" HeaderText="نمونه ۲" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.Sample3)" HeaderText="نمونه ۳" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.Sample4)" HeaderText="نمونه ۴" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.Sample5)" HeaderText="نمونه ۵" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.SampleMin)" HeaderText="کمینه" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.SampleMax)" HeaderText="بیشینه" Width="85" TextAlign="TextAlign.Center" Format="G4" />
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.JobSetupOk)" HeaderText="Job Setup" Width="95" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{
+                                    var item = (DecomposedInspectionRecord)context;
+                                    <span>@(item.JobSetupOk.HasValue ? (item.JobSetupOk.Value ? "OK" : "NOK") : "-")</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(DecomposedInspectionRecord.ResultStatus)" HeaderText="نتیجه انطباق" Width="120" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{
+                                    var item = (DecomposedInspectionRecord)context;
+                                }
+                                <span class="badge @(item.IsValid ? "badge-ok" : "badge-nok")">
+                                    @(item.IsValid ? "منطبق (OK)" : "نامنطبق (NOK)")
+                                </span>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
             </div>
         }
     </div>
@@ -231,6 +246,8 @@
 @code {
     private readonly InspectionReportFilter _filter = new();
     private string _validitySelection = "all";
+    private string _shamsiFromDate = string.Empty;
+    private string _shamsiToDate = string.Empty;
     private List<DecomposedInspectionRecord> _records = new();
     private bool _isLoading = true;
 
@@ -254,6 +271,10 @@
         else if (_validitySelection == "nok") _filter.IsValid = false;
         else _filter.IsValid = null;
 
+        _filter.FromDate = PersianDateHelper.ToGregorian(_shamsiFromDate);
+        var toDateG = PersianDateHelper.ToGregorian(_shamsiToDate);
+        _filter.ToDate = toDateG.HasValue ? toDateG.Value.AddDays(1).AddSeconds(-1) : null;
+
         _records = await InspectionRepo.GetDecomposedSubmissionsAsync(_filter);
 
         _totalRecords = _records.Count;
@@ -263,6 +284,27 @@
         _qualityYield = _totalRecords > 0 ? ((double)_okCount / _totalRecords) * 100.0 : 100.0;
 
         _isLoading = false;
+    }
+
+    private void SetDatePreset(int daysAgo)
+    {
+        var now = DateTime.Now;
+        if (daysAgo == 0)
+        {
+            _shamsiFromDate = PersianDateHelper.ToShamsi(now);
+            _shamsiToDate = PersianDateHelper.ToShamsi(now);
+        }
+        else
+        {
+            _shamsiFromDate = PersianDateHelper.ToShamsi(now.AddDays(-daysAgo));
+            _shamsiToDate = PersianDateHelper.ToShamsi(now);
+        }
+    }
+
+    private void ClearDatePreset()
+    {
+        _shamsiFromDate = string.Empty;
+        _shamsiToDate = string.Empty;
     }
 
     private async Task ResetFiltersAsync()
@@ -275,6 +317,8 @@
         _filter.ToDate = null;
         _filter.IsValid = null;
         _validitySelection = "all";
+        _shamsiFromDate = string.Empty;
+        _shamsiToDate = string.Empty;
 
         await LoadReportAsync();
     }
@@ -300,10 +344,4 @@
         var query = qs.Count > 0 ? "?" + string.Join("&", qs) : "";
         return $"api/reports/export/excel{query}";
     }
-
-    private static string FormatSample(double? val)
-        => val.HasValue ? val.Value.ToString("G4") : "-";
-
-    private static string Truncate(string val, int maxLen)
-        => string.IsNullOrEmpty(val) ? "" : (val.Length <= maxLen ? val : val[..maxLen] + "...");
 }
