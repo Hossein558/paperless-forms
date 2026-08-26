@@ -72,21 +72,15 @@
             </div>
 
             <div class="filter-item">
-                <label>از تاریخ (شمسی):</label>
-                <input type="text" 
-                       class="form-control-rtl" 
-                       placeholder="مثال: 1405/01/01" 
-                       @bind="_shamsiFromDate" 
-                       @onkeydown="HandleKeyDown" />
+                <PersianDatePicker Label="از تاریخ (شمسی):" 
+                                   Placeholder="انتخاب تاریخ شروع..." 
+                                   @bind-Value="_shamsiFromDate" />
             </div>
 
             <div class="filter-item">
-                <label>تا تاریخ (شمسی):</label>
-                <input type="text" 
-                       class="form-control-rtl" 
-                       placeholder="مثال: 1405/12/29" 
-                       @bind="_shamsiToDate" 
-                       @onkeydown="HandleKeyDown" />
+                <PersianDatePicker Label="تا تاریخ (شمسی):" 
+                                   Placeholder="انتخاب تاریخ پایان..." 
+                                   @bind-Value="_shamsiToDate" />
             </div>
         </div>
 

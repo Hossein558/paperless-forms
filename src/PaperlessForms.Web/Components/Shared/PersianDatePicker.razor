@@ -1,0 +1,211 @@
+@using System.Globalization
+
+<div class="persian-datepicker-container">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="pdp-label">@Label</label>
+    }
+
+    <div class="pdp-input-group" @onclick="TogglePopup">
+        <input type="text" 
+               class="pdp-input" 
+               placeholder="@Placeholder" 
+               value="@Value" 
+               readonly />
+        <button type="button" class="pdp-btn-icon" tabindex="-1">
+            📅
+        </button>
+    </div>
+
+    @if (_isOpen)
+    {
+        <div class="pdp-backdrop" @onclick="ClosePopup"></div>
+        <div class="pdp-popup">
+            <!-- هدر ماه و سال -->
+            <div class="pdp-header">
+                <button type="button" class="pdp-nav-btn" @onclick="PrevMonth">❮</button>
+                <div class="pdp-title">
+                    <select class="pdp-select" @bind="_currentMonth" @bind:after="OnMonthYearChanged">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m">@_monthNames[m - 1]</option>
+                        }
+                    </select>
+                    <select class="pdp-select" @bind="_currentYear" @bind:after="OnMonthYearChanged">
+                        @for (int y = _currentYear - 5; y <= _currentYear + 5; y++)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                </div>
+                <button type="button" class="pdp-nav-btn" @onclick="NextMonth">❯</button>
+            </div>
+
+            <!-- روزهای هفته -->
+            <div class="pdp-weekdays">
+                <span>ش</span>
+                <span>ی</span>
+                <span>د</span>
+                <span>س</span>
+                <span>چ</span>
+                <span>پ</span>
+                <span>ج</span>
+            </div>
+
+            <!-- شبکه روزهای ماه -->
+            <div class="pdp-days-grid">
+                @for (int i = 0; i < _startDayCol; i++)
+                {
+                    <span class="pdp-day pdp-day-empty"></span>
+                }
+                @for (int d = 1; d <= _daysInMonth; d++)
+                {
+                    var day = d;
+                    var isSelected = IsSelectedDay(day);
+                    var isToday = IsToday(day);
+                    var isFriday = (_startDayCol + day - 1) % 7 == 6;
+
+                    <button type="button" 
+                            class="pdp-day @(isSelected ? "pdp-day-selected" : "") @(isToday ? "pdp-day-today" : "") @(isFriday ? "pdp-day-friday" : "")"
+                            @onclick="() => SelectDay(day)">
+                        @day
+                    </button>
+                }
+            </div>
+
+            <!-- فوتر دکمه‌های کمکی -->
+            <div class="pdp-footer">
+                <button type="button" class="pdp-footer-btn" @onclick="SelectToday">امروز</button>
+                <button type="button" class="pdp-footer-btn" @onclick="Clear">پاکسازی</button>
+                <button type="button" class="pdp-footer-btn pdp-footer-btn-close" @onclick="ClosePopup">بستن</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "انتخاب تاریخ...";
+    [Parameter] public string Label { get; set; } = "";
+
+    private bool _isOpen = false;
+    private int _currentYear;
+    private int _currentMonth;
+    private int _daysInMonth;
+    private int _startDayCol;
+    private readonly PersianCalendar _pc = new();
+
+    private readonly string[] _monthNames = new string[]
+    {
+        "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+        "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+    };
+
+    protected override void OnInitialized()
+    {
+        InitCalendarView();
+    }
+
+    protected override void OnParametersSet()
+    {
+        InitCalendarView();
+    }
+
+    private void InitCalendarView()
+    {
+        if (!string.IsNullOrWhiteSpace(Value))
+        {
+            var parts = Value.Split('/');
+            if (parts.Length == 3 && int.TryParse(parts[0], out int y) && int.TryParse(parts[1], out int m))
+            {
+                _currentYear = y;
+                _currentMonth = Math.Clamp(m, 1, 12);
+                RecalculateDays();
+                return;
+            }
+        }
+
+        var now = DateTime.Now;
+        _currentYear = _pc.GetYear(now);
+        _currentMonth = _pc.GetMonth(now);
+        RecalculateDays();
+    }
+
+    private void RecalculateDays()
+    {
+        try
+        {
+            _daysInMonth = _pc.GetDaysInMonth(_currentYear, _currentMonth);
+            var firstOfMonth = _pc.ToDateTime(_currentYear, _currentMonth, 1, 0, 0, 0, 0);
+            _startDayCol = ((int)firstOfMonth.DayOfWeek + 1) % 7;
+        }
+        catch
+        {
+            _daysInMonth = 30;
+            _startDayCol = 0;
+        }
+    }
+
+    private void TogglePopup() => _isOpen = !_isOpen;
+    private void ClosePopup() => _isOpen = false;
+
+    private void PrevMonth()
+    {
+        if (_currentMonth > 1) _currentMonth--;
+        else { _currentMonth = 12; _currentYear--; }
+        RecalculateDays();
+    }
+
+    private void NextMonth()
+    {
+        if (_currentMonth < 12) _currentMonth++;
+        else { _currentMonth = 1; _currentYear++; }
+        RecalculateDays();
+    }
+
+    private void OnMonthYearChanged()
+    {
+        RecalculateDays();
+    }
+
+    private async Task SelectDay(int day)
+    {
+        var formatted = $"{_currentYear:D4}/{_currentMonth:D2}/{day:D2}";
+        Value = formatted;
+        await ValueChanged.InvokeAsync(Value);
+        _isOpen = false;
+    }
+
+    private async Task SelectToday()
+    {
+        var now = DateTime.Now;
+        _currentYear = _pc.GetYear(now);
+        _currentMonth = _pc.GetMonth(now);
+        int day = _pc.GetDayOfMonth(now);
+        RecalculateDays();
+        await SelectDay(day);
+    }
+
+    private async Task Clear()
+    {
+        Value = string.Empty;
+        await ValueChanged.InvokeAsync(Value);
+        _isOpen = false;
+    }
+
+    private bool IsSelectedDay(int day)
+    {
+        if (string.IsNullOrWhiteSpace(Value)) return false;
+        var formatted = $"{_currentYear:D4}/{_currentMonth:D2}/{day:D2}";
+        return Value == formatted;
+    }
+
+    private bool IsToday(int day)
+    {
+        var now = DateTime.Now;
+        return _pc.GetYear(now) == _currentYear &&
+               _pc.GetMonth(now) == _currentMonth &&
+               _pc.GetDayOfMonth(now) == day;
+    }
+}

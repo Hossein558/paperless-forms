@@ -319,7 +319,7 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
                 sheet.Cells[r, 4].PutValue(item.InspectionStationCode);
                 sheet.Cells[r, 5].PutValue(item.MachineCode);
                 sheet.Cells[r, 6].PutValue(item.ControlProgramNumber);
-                sheet.Cells[r, 7].PutValue(item.SubmittedAt.ToString("yyyy/MM/dd HH:mm"));
+                sheet.Cells[r, 7].PutValue(item.SubmittedAtShamsi);
                 sheet.Cells[r, 8].PutValue(item.InspectorName);
                 sheet.Cells[r, 9].PutValue(item.QcSupervisorName);
                 sheet.Cells[r, 10].PutValue(item.RowNumber);
@@ -339,9 +339,8 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
                 sheet.Cells[r, 24].PutValue(item.JobSetupOk.HasValue ? (item.JobSetupOk.Value ? "OK" : "NOK") : "-");
                 sheet.Cells[r, 25].PutValue(item.JobSetupIssues);
 
-                var statusCell = sheet.Cells[r, 26];
-                statusCell.PutValue(item.ResultStatus);
-                statusCell.SetStyle(item.IsValid ? styleOk : styleNok);
+                sheet.Cells[r, 26].PutValue(item.IsValid ? "OK" : "NOK");
+                sheet.Cells[r, 26].SetStyle(item.IsValid ? styleOk : styleNok);
 
                 sheet.Cells[r, 0].SetStyle(styleCenter);
                 sheet.Cells[r, 2].SetStyle(styleCenter);
@@ -354,7 +353,17 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
                 sheet.AutoFilter.Range = $"A1:AA{records.Count + 1}";
             }
 
-            sheet.AutoFitColumns();
+            // Set explicit column widths (avoids SkiaSharp / GDI dependency on Linux)
+            int[] colWidths = new int[]
+            {
+                8, 12, 16, 26, 14, 12, 14, 18, 16, 16,
+                10, 22, 28, 14, 8, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 12, 22, 12
+            };
+            for (int c = 0; c < colWidths.Length; c++)
+            {
+                sheet.Cells.SetColumnWidth(c, colWidths[c]);
+            }
 
             using var ms = new MemoryStream();
             workbook.Save(ms, SaveFormat.Xlsx);
