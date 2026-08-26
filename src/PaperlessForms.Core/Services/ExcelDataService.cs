@@ -186,6 +186,182 @@ public class ExcelDataService : IPartRepository, IInspectionRepository
         });
     }
 
+    public async Task<List<DecomposedInspectionRecord>> GetDecomposedSubmissionsAsync(InspectionReportFilter? filter = null)
+    {
+        var submissions = await GetSubmissionsAsync(filter?.PartCode, filter?.FromDate, filter?.ToDate);
+        var decomposed = new List<DecomposedInspectionRecord>();
+
+        foreach (var sub in submissions)
+        {
+            if (!string.IsNullOrWhiteSpace(filter?.InspectorName) &&
+                !sub.InspectorName.Contains(filter.InspectorName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(filter?.MachineCode) &&
+                !sub.MachineCode.Contains(filter.MachineCode, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (sub.Rows == null || sub.Rows.Count == 0) continue;
+
+            foreach (var row in sub.Rows)
+            {
+                if (!string.IsNullOrWhiteSpace(filter?.ParameterName) &&
+                    !row.ParameterName.Contains(filter.ParameterName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (filter?.IsValid.HasValue == true && row.IsValid != filter.IsValid.Value)
+                    continue;
+
+                decomposed.Add(new DecomposedInspectionRecord
+                {
+                    SubmissionId = sub.Id,
+                    FormCode = sub.FormCode,
+                    FormRevision = sub.FormRevision,
+                    PartCode = sub.PartCode,
+                    PartName = sub.PartName,
+                    InspectionStationCode = sub.InspectionStationCode,
+                    MachineCode = sub.MachineCode,
+                    ControlProgramNumber = sub.ControlProgramNumber,
+                    SubmittedAt = sub.SubmittedAt,
+                    InspectorName = sub.InspectorName,
+                    QcSupervisorName = sub.QcSupervisorName,
+                    SubmissionStatus = sub.Status,
+
+                    RowNumber = row.RowNumber,
+                    ParameterName = row.ParameterName,
+                    AcceptanceCriteria = row.ControlItem,
+                    ControlMethod = row.ControlMethod,
+                    Unit = row.Unit,
+                    MinValue = row.MinValue,
+                    MaxValue = row.MaxValue,
+
+                    Sample1 = row.Samples != null && row.Samples.Length > 0 ? row.Samples[0] : null,
+                    Sample2 = row.Samples != null && row.Samples.Length > 1 ? row.Samples[1] : null,
+                    Sample3 = row.Samples != null && row.Samples.Length > 2 ? row.Samples[2] : null,
+                    Sample4 = row.Samples != null && row.Samples.Length > 3 ? row.Samples[3] : null,
+                    Sample5 = row.Samples != null && row.Samples.Length > 4 ? row.Samples[4] : null,
+
+                    SampleMin = row.SampleMin,
+                    SampleMax = row.SampleMax,
+                    JobSetupOk = row.JobSetupOk,
+                    JobSetupIssues = row.JobSetupIssues,
+                    IsValid = row.IsValid
+                });
+            }
+        }
+
+        return decomposed.OrderByDescending(d => d.SubmittedAt).ThenBy(d => d.RowNumber).ToList();
+    }
+
+    public async Task<byte[]> GenerateExcelExportAsync(InspectionReportFilter? filter = null)
+    {
+        var records = await GetDecomposedSubmissionsAsync(filter);
+
+        return await Task.Run(() =>
+        {
+            var workbook = new Workbook();
+            var sheet = workbook.Worksheets[0];
+            sheet.Name = "گزارش تفکیکی بازرسی";
+            sheet.DisplayRightToLeft = true;
+
+            string[] headers = new[]
+            {
+                "ردیف", "شناسه فرم", "کد قطعه", "نام قطعه", "ایستگاه", "دستگاه",
+                "برنامه کنترل", "تاریخ و زمان", "بازرس", "سرپرست QC", "شماره ردیف",
+                "آیتم کنترلی", "معیار پذیرش", "روش کنترل", "واحد", "حد پایین", "حد بالا",
+                "نمونه ۱", "نمونه ۲", "نمونه ۳", "نمونه ۴", "نمونه ۵",
+                "کمینه نمونه‌ها", "بیشینه نمونه‌ها", "Job Setup", "ایرادات Job Setup", "وضعیت انطباق"
+            };
+
+            // Style for header
+            var headerStyle = workbook.CreateStyle();
+            headerStyle.ForegroundColor = System.Drawing.Color.FromArgb(41, 128, 185);
+            headerStyle.Pattern = BackgroundType.Solid;
+            headerStyle.Font.Color = System.Drawing.Color.White;
+            headerStyle.Font.IsBold = true;
+            headerStyle.Font.Size = 10;
+            headerStyle.HorizontalAlignment = TextAlignmentType.Center;
+            headerStyle.VerticalAlignment = TextAlignmentType.Center;
+
+            for (int col = 0; col < headers.Length; col++)
+            {
+                sheet.Cells[0, col].PutValue(headers[col]);
+                sheet.Cells[0, col].SetStyle(headerStyle);
+            }
+            sheet.Cells.SetRowHeight(0, 26);
+
+            var styleOk = workbook.CreateStyle();
+            styleOk.ForegroundColor = System.Drawing.Color.FromArgb(212, 239, 223);
+            styleOk.Pattern = BackgroundType.Solid;
+            styleOk.Font.Color = System.Drawing.Color.FromArgb(20, 90, 50);
+            styleOk.Font.IsBold = true;
+            styleOk.HorizontalAlignment = TextAlignmentType.Center;
+
+            var styleNok = workbook.CreateStyle();
+            styleNok.ForegroundColor = System.Drawing.Color.FromArgb(249, 215, 217);
+            styleNok.Pattern = BackgroundType.Solid;
+            styleNok.Font.Color = System.Drawing.Color.FromArgb(146, 43, 33);
+            styleNok.Font.IsBold = true;
+            styleNok.HorizontalAlignment = TextAlignmentType.Center;
+
+            var styleCenter = workbook.CreateStyle();
+            styleCenter.HorizontalAlignment = TextAlignmentType.Center;
+
+            for (int i = 0; i < records.Count; i++)
+            {
+                int r = i + 1;
+                var item = records[i];
+
+                sheet.Cells[r, 0].PutValue(r);
+                sheet.Cells[r, 1].PutValue(item.SubmissionId.ToString().Substring(0, 8));
+                sheet.Cells[r, 2].PutValue(item.PartCode);
+                sheet.Cells[r, 3].PutValue(item.PartName);
+                sheet.Cells[r, 4].PutValue(item.InspectionStationCode);
+                sheet.Cells[r, 5].PutValue(item.MachineCode);
+                sheet.Cells[r, 6].PutValue(item.ControlProgramNumber);
+                sheet.Cells[r, 7].PutValue(item.SubmittedAt.ToString("yyyy/MM/dd HH:mm"));
+                sheet.Cells[r, 8].PutValue(item.InspectorName);
+                sheet.Cells[r, 9].PutValue(item.QcSupervisorName);
+                sheet.Cells[r, 10].PutValue(item.RowNumber);
+                sheet.Cells[r, 11].PutValue(item.ParameterName);
+                sheet.Cells[r, 12].PutValue(item.AcceptanceCriteria);
+                sheet.Cells[r, 13].PutValue(item.ControlMethod);
+                sheet.Cells[r, 14].PutValue(item.Unit);
+                if (item.MinValue.HasValue) sheet.Cells[r, 15].PutValue(item.MinValue.Value);
+                if (item.MaxValue.HasValue) sheet.Cells[r, 16].PutValue(item.MaxValue.Value);
+                if (item.Sample1.HasValue) sheet.Cells[r, 17].PutValue(item.Sample1.Value);
+                if (item.Sample2.HasValue) sheet.Cells[r, 18].PutValue(item.Sample2.Value);
+                if (item.Sample3.HasValue) sheet.Cells[r, 19].PutValue(item.Sample3.Value);
+                if (item.Sample4.HasValue) sheet.Cells[r, 20].PutValue(item.Sample4.Value);
+                if (item.Sample5.HasValue) sheet.Cells[r, 21].PutValue(item.Sample5.Value);
+                if (item.SampleMin.HasValue) sheet.Cells[r, 22].PutValue(item.SampleMin.Value);
+                if (item.SampleMax.HasValue) sheet.Cells[r, 23].PutValue(item.SampleMax.Value);
+                sheet.Cells[r, 24].PutValue(item.JobSetupOk.HasValue ? (item.JobSetupOk.Value ? "OK" : "NOK") : "-");
+                sheet.Cells[r, 25].PutValue(item.JobSetupIssues);
+
+                var statusCell = sheet.Cells[r, 26];
+                statusCell.PutValue(item.ResultStatus);
+                statusCell.SetStyle(item.IsValid ? styleOk : styleNok);
+
+                sheet.Cells[r, 0].SetStyle(styleCenter);
+                sheet.Cells[r, 2].SetStyle(styleCenter);
+                sheet.Cells[r, 7].SetStyle(styleCenter);
+                sheet.Cells[r, 10].SetStyle(styleCenter);
+            }
+
+            if (records.Count > 0)
+            {
+                sheet.AutoFilter.Range = $"A1:AA{records.Count + 1}";
+            }
+
+            sheet.AutoFitColumns();
+
+            using var ms = new MemoryStream();
+            workbook.Save(ms, SaveFormat.Xlsx);
+            return ms.ToArray();
+        });
+    }
+
     public async Task<(bool IsSuccess, string ErrorMessage)> SaveSubmissionAsync(InspectionSubmission submission)
     {
         await _writeLock.WaitAsync();

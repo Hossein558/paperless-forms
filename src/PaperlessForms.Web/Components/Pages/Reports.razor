@@ -1,0 +1,309 @@
+@page "/reports"
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PaperlessForms.Core.Interfaces
+@using PaperlessForms.Core.Models
+@inject IInspectionRepository InspectionRepo
+@inject IPartRepository PartRepo
+@inject NavigationManager NavManager
+
+<PageTitle>گزارش‌گیری تفکیکی بازرسی - Paperless Forms</PageTitle>
+
+<div class="reports-page">
+    <!-- ─── هدر بخش گزارش‌ها ─── -->
+    <div class="reports-header">
+        <div class="header-title-group">
+            <span class="header-icon">📊</span>
+            <div>
+                <h2>گزارش‌گیری تفکیکی و تحلیلی بازرسی</h2>
+                <p class="text-muted">مشاهده، فیلتر و خروجی داده‌های بازرسی با تفکیک کامل مقادیر و نمونه‌ها</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="@GetExportUrl()" target="_blank" class="btn-export-excel">
+                <span class="icon">📥</span> دریافت خروجی اکسل (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    <!-- ─── نوار فیلترها ─── -->
+    <div class="filter-card">
+        <div class="filter-grid">
+            <div class="filter-item">
+                <label>کد قطعه:</label>
+                <input type="text" 
+                       class="form-control-rtl" 
+                       placeholder="مثال: FJ50659401" 
+                       @bind="_filter.PartCode" 
+                       @bind:event="oninput" 
+                       @onkeydown="HandleKeyDown" />
+            </div>
+
+            <div class="filter-item">
+                <label>نام یا کد بازرس:</label>
+                <input type="text" 
+                       class="form-control-rtl" 
+                       placeholder="جستجوی بازرس..." 
+                       @bind="_filter.InspectorName" 
+                       @bind:event="oninput" 
+                       @onkeydown="HandleKeyDown" />
+            </div>
+
+            <div class="filter-item">
+                <label>آیتم کنترلی / مشخصه:</label>
+                <input type="text" 
+                       class="form-control-rtl" 
+                       placeholder="نام پارامتر..." 
+                       @bind="_filter.ParameterName" 
+                       @bind:event="oninput" 
+                       @onkeydown="HandleKeyDown" />
+            </div>
+
+            <div class="filter-item">
+                <label>وضعیت انطباق:</label>
+                <select class="form-control-rtl" @bind="_validitySelection">
+                    <option value="all">همه نتایج</option>
+                    <option value="ok">فقط منطبق (OK)</option>
+                    <option value="nok">فقط نامنطبق (NOK)</option>
+                </select>
+            </div>
+
+            <div class="filter-item">
+                <label>از تاریخ:</label>
+                <input type="date" class="form-control-rtl" @bind="_filter.FromDate" />
+            </div>
+
+            <div class="filter-item">
+                <label>تا تاریخ:</label>
+                <input type="date" class="form-control-rtl" @bind="_filter.ToDate" />
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn-primary-rtl" @onclick="LoadReportAsync" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span>در حال بارگذاری...</span>
+                }
+                else
+                {
+                    <span>🔍 اعمال فیلتر</span>
+                }
+            </button>
+            <button class="btn-secondary-rtl" @onclick="ResetFiltersAsync" disabled="@_isLoading">
+                🔄 بازنشانی فیلترها
+            </button>
+        </div>
+    </div>
+
+    <!-- ─── کارت‌های شاخص‌های کیفی (KPI Cards) ─── -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon icon-blue">📋</div>
+            <div class="kpi-details">
+                <span class="kpi-value">@_totalSubmissions</span>
+                <span class="kpi-label">تعداد کل فرم‌ها</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon icon-cyan">🔢</div>
+            <div class="kpi-details">
+                <span class="kpi-value">@_totalRecords</span>
+                <span class="kpi-label">ردیف‌های ارزیابی‌شده</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon icon-green">✅</div>
+            <div class="kpi-details">
+                <span class="kpi-value text-success">@_okCount</span>
+                <span class="kpi-label">موارد منطبق (OK)</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon icon-red">⚠️</div>
+            <div class="kpi-details">
+                <span class="kpi-value text-danger">@_nokCount</span>
+                <span class="kpi-label">عدم‌انطباق‌ها (NOK)</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon icon-purple">📈</div>
+            <div class="kpi-details">
+                <span class="kpi-value">@_qualityYield.ToString("F1")%</span>
+                <span class="kpi-label">نرخ انطباق کیفی</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── جدول داده‌های تفکیکی ─── -->
+    <div class="report-table-container">
+        <div class="table-toolbar">
+            <span class="records-badge">
+                تعداد رکوردهای یافت‌شده: <strong>@_records.Count</strong> سطر
+            </span>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="loading-box">
+                <div class="spinner"></div>
+                <p>در حال واکشی و تفکیک اطلاعات بازرسی...</p>
+            </div>
+        }
+        else if (_records.Count == 0)
+        {
+            <div class="empty-state">
+                <span class="empty-icon">📭</span>
+                <h3>هیچ رکوردی یافت نشد</h3>
+                <p>با فیلترهای انتخاب‌شده داده‌ای برای نمایش وجود ندارد.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>ردیف</th>
+                            <th>تاریخ ثبت</th>
+                            <th>کد قطعه</th>
+                            <th>نام قطعه</th>
+                            <th>بازرس</th>
+                            <th>مشخصه کنترلی</th>
+                            <th>معیار پذیرش</th>
+                            <th>حد پایین</th>
+                            <th>حد بالا</th>
+                            <th>نم ۱</th>
+                            <th>نم ۲</th>
+                            <th>نم ۳</th>
+                            <th>نم ۴</th>
+                            <th>نم ۵</th>
+                            <th>کمینه</th>
+                            <th>بیشینه</th>
+                            <th>Job Setup</th>
+                            <th>نتیجه</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < _records.Count; i++)
+                        {
+                            var item = _records[i];
+                            <tr class="@(item.IsValid ? "" : "row-invalid")">
+                                <td class="col-num">@(i + 1)</td>
+                                <td class="col-date">@item.SubmittedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                <td class="col-part"><strong>@item.PartCode</strong></td>
+                                <td class="col-name" title="@item.PartName">@Truncate(item.PartName, 25)</td>
+                                <td class="col-inspector">@item.InspectorName</td>
+                                <td class="col-param">@item.ParameterName</td>
+                                <td class="col-crit" title="@item.AcceptanceCriteria">
+                                    <span>@Truncate(item.AcceptanceCriteria, 30)</span>
+                                </td>
+                                <td class="col-val">@item.MinValue?.ToString("G4")</td>
+                                <td class="col-val">@item.MaxValue?.ToString("G4")</td>
+                                <td class="col-sample">@FormatSample(item.Sample1)</td>
+                                <td class="col-sample">@FormatSample(item.Sample2)</td>
+                                <td class="col-sample">@FormatSample(item.Sample3)</td>
+                                <td class="col-sample">@FormatSample(item.Sample4)</td>
+                                <td class="col-sample">@FormatSample(item.Sample5)</td>
+                                <td class="col-minmax">@FormatSample(item.SampleMin)</td>
+                                <td class="col-minmax">@FormatSample(item.SampleMax)</td>
+                                <td class="col-jobsetup">
+                                    @(item.JobSetupOk.HasValue ? (item.JobSetupOk.Value ? "OK" : "NOK") : "-")
+                                </td>
+                                <td class="col-status">
+                                    <span class="badge @(item.IsValid ? "badge-ok" : "badge-nok")">
+                                        @item.ResultStatus
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly InspectionReportFilter _filter = new();
+    private string _validitySelection = "all";
+    private List<DecomposedInspectionRecord> _records = new();
+    private bool _isLoading = true;
+
+    private int _totalSubmissions = 0;
+    private int _totalRecords = 0;
+    private int _okCount = 0;
+    private int _nokCount = 0;
+    private double _qualityYield = 0.0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReportAsync();
+    }
+
+    private async Task LoadReportAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        if (_validitySelection == "ok") _filter.IsValid = true;
+        else if (_validitySelection == "nok") _filter.IsValid = false;
+        else _filter.IsValid = null;
+
+        _records = await InspectionRepo.GetDecomposedSubmissionsAsync(_filter);
+
+        _totalRecords = _records.Count;
+        _totalSubmissions = _records.Select(r => r.SubmissionId).Distinct().Count();
+        _okCount = _records.Count(r => r.IsValid);
+        _nokCount = _records.Count(r => !r.IsValid);
+        _qualityYield = _totalRecords > 0 ? ((double)_okCount / _totalRecords) * 100.0 : 100.0;
+
+        _isLoading = false;
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        _filter.PartCode = null;
+        _filter.InspectorName = null;
+        _filter.ParameterName = null;
+        _filter.MachineCode = null;
+        _filter.FromDate = null;
+        _filter.ToDate = null;
+        _filter.IsValid = null;
+        _validitySelection = "all";
+
+        await LoadReportAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoadReportAsync();
+        }
+    }
+
+    private string GetExportUrl()
+    {
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_filter.PartCode)) qs.Add($"partCode={Uri.EscapeDataString(_filter.PartCode)}");
+        if (!string.IsNullOrWhiteSpace(_filter.InspectorName)) qs.Add($"inspector={Uri.EscapeDataString(_filter.InspectorName)}");
+        if (!string.IsNullOrWhiteSpace(_filter.ParameterName)) qs.Add($"parameter={Uri.EscapeDataString(_filter.ParameterName)}");
+        if (_filter.FromDate.HasValue) qs.Add($"from={_filter.FromDate.Value:yyyy-MM-dd}");
+        if (_filter.ToDate.HasValue) qs.Add($"to={_filter.ToDate.Value:yyyy-MM-dd}");
+        if (_filter.IsValid.HasValue) qs.Add($"isValid={_filter.IsValid.Value}");
+
+        var query = qs.Count > 0 ? "?" + string.Join("&", qs) : "";
+        return $"api/reports/export/excel{query}";
+    }
+
+    private static string FormatSample(double? val)
+        => val.HasValue ? val.Value.ToString("G4") : "-";
+
+    private static string Truncate(string val, int maxLen)
+        => string.IsNullOrEmpty(val) ? "" : (val.Length <= maxLen ? val : val[..maxLen] + "...");
+}

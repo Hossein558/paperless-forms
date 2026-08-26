@@ -199,9 +199,60 @@ var avatarHandler = (HttpContext context, IConfiguration config) =>
 app.MapGet("/api/avatar", avatarHandler).RequireAuthorization();
 app.MapGet("/api/user/avatar", avatarHandler).RequireAuthorization();
 
+// ─── Reports API ──────────────────────────────────────────
+app.MapGet("/api/reports/decomposed", async (
+    [FromQuery] string? partCode,
+    [FromQuery] string? inspector,
+    [FromQuery] string? parameter,
+    [FromQuery] string? machineCode,
+    [FromQuery] DateTime? from,
+    [FromQuery] DateTime? to,
+    [FromQuery] bool? isValid,
+    IInspectionRepository inspectionRepo) =>
+{
+    var filter = new PaperlessForms.Core.Models.InspectionReportFilter
+    {
+        PartCode = partCode,
+        InspectorName = inspector,
+        ParameterName = parameter,
+        MachineCode = machineCode,
+        FromDate = from,
+        ToDate = to,
+        IsValid = isValid
+    };
+    var data = await inspectionRepo.GetDecomposedSubmissionsAsync(filter);
+    return Results.Ok(data);
+}).RequireAuthorization();
+
+app.MapGet("/api/reports/export/excel", async (
+    [FromQuery] string? partCode,
+    [FromQuery] string? inspector,
+    [FromQuery] string? parameter,
+    [FromQuery] string? machineCode,
+    [FromQuery] DateTime? from,
+    [FromQuery] DateTime? to,
+    [FromQuery] bool? isValid,
+    IInspectionRepository inspectionRepo) =>
+{
+    var filter = new PaperlessForms.Core.Models.InspectionReportFilter
+    {
+        PartCode = partCode,
+        InspectorName = inspector,
+        ParameterName = parameter,
+        MachineCode = machineCode,
+        FromDate = from,
+        ToDate = to,
+        IsValid = isValid
+    };
+    var excelBytes = await inspectionRepo.GenerateExcelExportAsync(filter);
+    var fileName = $"InspectionReport_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+    return Results.File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+}).RequireAuthorization();
+
 app.MapStaticAssets();
 app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
