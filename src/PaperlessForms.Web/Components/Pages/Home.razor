@@ -2,14 +2,42 @@
 
 <PageTitle>داشبورد - Paperless Forms</PageTitle>
 
-<div class="step-card">
-    <h2 class="step-title">خوش آمدید!</h2>
-    <p>به سیستم فرم‌های الکترونیکی (Paperless) تولید خوش آمدید.</p>
-    <p>از منوی سمت راست برای دسترسی به فرم‌ها و امکانات استفاده کنید.</p>
-    
-    <div style="margin-top: 2rem;">
-        <a href="inspection/in-process" class="btn-primary-rtl" style="text-decoration: none;">
-            🔍 ثبت فرم بازرسی جدید
-        </a>
+<div class="dashboard-page">
+    <div class="welcome-banner">
+        <h2>سیستم فرم‌های الکترونیکی (Paperless) تولید</h2>
+        <p>واحد کنترل کیفیت و مهندسی سیستم‌ها - شرکت صنایع تولیدی کروز</p>
+    </div>
+
+    <div class="dashboard-cards-grid">
+        <!-- کارت ۱: ثبت بازرسی جدید -->
+        <div class="dash-card">
+            <div class="dash-card-icon icon-inspection">🔍</div>
+            <div class="dash-card-body">
+                <h3>بازرسی حین فرآیند تولید</h3>
+                <p>ثبت آنلاین اطلاعات ابعادی، مشخصه‌های کیفی و اندازه‌گیری نمونه‌های ۵گانه خط تولید (فرم F-IT-23/05).</p>
+            </div>
+            <div class="dash-card-actions">
+                <a href="inspection/in-process" class="btn-primary-rtl">
+                    ➕ ثبت فرم بازرسی جدید
+                </a>
+            </div>
+        </div>
+
+        <!-- کارت ۲: گزارش‌گیری تفکیکی و خروجی اکسل -->
+        <div class="dash-card highlight-card">
+            <div class="dash-card-icon icon-reports">📊</div>
+            <div class="dash-card-body">
+                <h3>گزارش‌گیری تفکیکی و خروجی اکسل</h3>
+                <p>مشاهده جدول تفکیک‌شده پارامترها و نمونه‌ها، فیلترگذاری بر اساس کد قطعه، بازرس و تاریخ، و دریافت خروجی اکسل استاندارد (.xlsx).</p>
+            </div>
+            <div class="dash-card-actions">
+                <a href="reports" class="btn-primary-rtl">
+                    📊 مشاهده گزارش‌ها و فیلترها
+                </a>
+                <a href="api/reports/export/excel" target="_blank" class="btn-export-excel" style="margin-right: 8px;">
+                    📥 دانلود آنی اکسل (.xlsx)
+                </a>
+            </div>
+        </div>
     </div>
 </div>
