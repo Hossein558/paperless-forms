@@ -1,6 +1,7 @@
 @page "/inspection/in-process"
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Globalization
 @using PaperlessForms.Core.Interfaces
 @using PaperlessForms.Core.Models
 @inject IPartRepository PartRepo
@@ -167,12 +168,13 @@
                                     <td class="col-sample @GetSampleClass(row, sampleIdx)">
                                         @if (row.MinValue.HasValue || row.MaxValue.HasValue)
                                         {
-                                            <!-- فیلد عددی با اعتبارسنجی رنج -->
-                                            <input type="number"
+                                            <!-- فیلد عددی با پشتیبانی کامل از ورود مستقیم، اعشاری و کیبورد لمسی تبلت -->
+                                            <input type="text"
+                                                   inputmode="decimal"
                                                    class="sample-input"
-                                                   step="0.001"
-                                                   value="@row.Samples[sampleIdx]"
-                                                   @oninput="@(e => UpdateSample(row, sampleIdx, e.Value?.ToString()))" />
+                                                   placeholder="-"
+                                                   value="@GetSampleRawText(row, sampleIdx)"
+                                                   @oninput="@(e => OnSampleInput(row, sampleIdx, e.Value?.ToString()))" />
                                         }
                                         else
                                         {
@@ -274,9 +276,12 @@
         _isLoading = false;
     }
 
+    private readonly Dictionary<string, string> _sampleRawInputs = new();
+
     private void ConfirmPartInfo()
     {
         if (_selectedPart == null) return;
+        _sampleRawInputs.Clear();
 
         // پر کردن هدر Submission
         _submission.PartCode = _selectedPart.PartCode;
@@ -327,6 +332,7 @@
         _partCodeInput = string.Empty;
         _selectedPart = null;
         _submission = new InspectionSubmission();
+        _sampleRawInputs.Clear();
         
         if (AuthState != null)
         {
@@ -346,13 +352,54 @@
         await ResetFormAsync();
     }
 
-    private void UpdateSample(InspectionRow row, int idx, string? value)
+    private string GetSampleRawText(InspectionRow row, int idx)
     {
-        if (double.TryParse(value, out var d))
+        var key = $"{row.RowNumber}_{idx}";
+        if (_sampleRawInputs.TryGetValue(key, out var text))
+            return text;
+        return row.Samples[idx]?.ToString(CultureInfo.InvariantCulture) ?? "";
+    }
+
+    private void OnSampleInput(InspectionRow row, int idx, string? value)
+    {
+        var key = $"{row.RowNumber}_{idx}";
+        _sampleRawInputs[key] = value ?? "";
+
+        if (TryParseDoubleFlexible(value, out var d))
+        {
             row.Samples[idx] = d;
-        else
+        }
+        else if (string.IsNullOrWhiteSpace(value))
+        {
             row.Samples[idx] = null;
+        }
         StateHasChanged();
+    }
+
+    private static bool TryParseDoubleFlexible(string? input, out double result)
+    {
+        result = 0;
+        if (string.IsNullOrWhiteSpace(input)) return false;
+
+        // تبدیل ارقام فارسی و عربی به انگلیسی و استانداردسازی اعشار
+        var normalized = input.Trim()
+            .Replace('۰', '0').Replace('۱', '1').Replace('۲', '2').Replace('۳', '3').Replace('۴', '4')
+            .Replace('۵', '5').Replace('۶', '6').Replace('۷', '7').Replace('۸', '8').Replace('۹', '9')
+            .Replace('٠', '0').Replace('١', '1').Replace('٢', '2').Replace('٣', '3').Replace('٤', '4')
+            .Replace('٥', '5').Replace('٦', '6').Replace('٧', '7').Replace('٨', '8').Replace('٩', '9')
+            .Replace('/', '.')
+            .Replace('٫', '.')
+            .Replace(',', '.');
+
+        // پشتیبانی از وضعیت حین تایپ ممیز (مانند "0.")
+        if (normalized.EndsWith('.'))
+        {
+            var withoutDot = normalized.TrimEnd('.');
+            if (string.IsNullOrEmpty(withoutDot)) return false;
+            return double.TryParse(withoutDot, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+        }
+
+        return double.TryParse(normalized, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
     }
 
     private string GetQualitativeSampleText(InspectionRow row, int idx)
@@ -360,7 +407,7 @@
 
     private void SetQualitativeSample(InspectionRow row, int idx, string? value)
     {
-        if (double.TryParse(value, out var d)) row.Samples[idx] = d;
+        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) row.Samples[idx] = d;
         else row.Samples[idx] = null;
         StateHasChanged();
     }
