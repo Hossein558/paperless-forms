@@ -418,10 +418,17 @@
     private string GetSampleClass(InspectionRow row, int idx)
     {
         if (!row.Samples[idx].HasValue) return "";
-        if (!row.MinValue.HasValue && !row.MaxValue.HasValue) return "";
-        bool ok = (!row.MinValue.HasValue || row.Samples[idx]!.Value >= row.MinValue.Value) &&
-                  (!row.MaxValue.HasValue || row.Samples[idx]!.Value <= row.MaxValue.Value);
-        return ok ? "sample-ok" : "sample-nok";
+        
+        // ۱. اگر آیتم کمی/مقداری باشد
+        if (row.MinValue.HasValue || row.MaxValue.HasValue)
+        {
+            bool ok = (!row.MinValue.HasValue || row.Samples[idx]!.Value >= row.MinValue.Value) &&
+                      (!row.MaxValue.HasValue || row.Samples[idx]!.Value <= row.MaxValue.Value);
+            return ok ? "sample-ok" : "sample-nok";
+        }
+
+        // ۲. اگر آیتم کیفی/وصفی باشد (1=OK, 0=NOK)
+        return row.Samples[idx]!.Value != 0 ? "sample-ok" : "sample-nok";
     }
 
     private static string TruncateText(string text, int maxLen)

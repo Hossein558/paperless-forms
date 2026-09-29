@@ -468,7 +468,20 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important;
 /* نمونه‌های OK/NOK */
 .sample-ok { background: #d1fae5 !important; }
 .sample-nok { background: #fee2e2 !important; }
-.row-invalid { border-right: 3px solid var(--danger); }
+.row-invalid { border-right: 4px solid var(--danger) !important; }
+
+.sample-ok .sample-input, .sample-ok .sample-select {
+    background-color: #d1fae5 !important;
+    border-color: #059669 !important;
+    color: #065f46 !important;
+}
+
+.sample-nok .sample-input, .sample-nok .sample-select {
+    background-color: #fee2e2 !important;
+    border-color: #dc2626 !important;
+    color: #991b1b !important;
+    font-weight: 700;
+}
 
 /* پنهان کردن فلش‌های اسپینر و استایل لمسی بهینه برای تبلت */
 .sample-input::-webkit-outer-spin-button,

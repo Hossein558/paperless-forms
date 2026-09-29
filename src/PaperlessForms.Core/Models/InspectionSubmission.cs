@@ -53,7 +53,24 @@ public class InspectionRow
     public double? SampleMax => Samples.Where(s => s.HasValue).Any() ? Samples.Where(s => s.HasValue).Select(s => s!.Value).Max() : null;
 
     // وضعیت اعتبارسنجی
-    public bool IsValid => Samples.Where(s => s.HasValue).All(s =>
-        (!MinValue.HasValue || s!.Value >= MinValue.Value) &&
-        (!MaxValue.HasValue || s!.Value <= MaxValue.Value));
+    public bool IsValid
+    {
+        get
+        {
+            var filledSamples = Samples.Where(s => s.HasValue).ToList();
+            if (filledSamples.Count == 0) return true;
+
+            // ۱. آیتم‌های مقداری و دارای تلرانس (کمی)
+            if (MinValue.HasValue || MaxValue.HasValue)
+            {
+                return filledSamples.All(s =>
+                    (!MinValue.HasValue || s!.Value >= MinValue.Value) &&
+                    (!MaxValue.HasValue || s!.Value <= MaxValue.Value));
+            }
+
+            // ۲. آیتم‌های کیفی و وصفی (1=OK, 0=NOK):
+            // اگر حتی یکی از نمونه‌ها 0 (Not OK) باشد، کل ردیف نامنطبق (false) می‌شود
+            return filledSamples.All(s => s!.Value != 0);
+        }
+    }
 }
